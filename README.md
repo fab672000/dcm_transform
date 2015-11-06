@@ -1,4 +1,4 @@
-# dcmTransform
+# dcm_transform
 Rich Python DICOM editor and anonymizer cmd line tool also allowing to apply 3d space batch transforms easily to any DICOM file or tree directory structure.
 
 Featuring more than 20 optional cmd-line parameter options available, generic dicom tags key/value list edition, recursive tree directory structure parsing and output generation.
