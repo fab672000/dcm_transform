@@ -642,17 +642,6 @@ def anonymize_tags_if_anon(dataset,remove_curves=False, remove_private_tags=Fals
 
     dataset.walk(PN_callback)
 
-    if ARGS.desc != '':
-        try:
-            series_description = desc_prefix + dataset.SeriesDescription
-            if len(series_description) > 60:
-                series_description = (series_description[:60] + '..')
-            else:
-                series_description = ARGS.desc
-            dataset.SeriesDescription = series_description
-        except Exception as exc:
-            print(exc)
-
     if ARGS.an != '':
         dataset.PatientID = ARGS.pid
         change_tag_if_arg(dataset, "InstitutionName", ARGS.an)  # optionally change institution
@@ -690,7 +679,11 @@ def anonymize_tags_if_anon(dataset,remove_curves=False, remove_private_tags=Fals
         if remove_curves:
             dataset.walk(curves_callback)
 
-
+def truncate_str(str, l, ending='..'):
+    le = len(ending)
+    if len(str) > l:
+        str = (str[:(l-le)] + ending)
+    return str
 #------------------------------------------------------------------------------
 def transform(file_count, desc_prefix, input_filename, output_filename):
     """Replace data element values to partly transform a DICOM file.
@@ -725,14 +718,26 @@ def transform(file_count, desc_prefix, input_filename, output_filename):
         # Deal with all sorts of dates and time if user asks for it:
         transform_dates(file_count, dataset)
 
-        change_tag_if_arg(dataset, "StudyDescription", ARGS.sdesc) #optionally change study desc
+        change_tag_if_arg(dataset, "StudyDescription", ARGS.sdesc) # optionally change study desc
         change_tag_if_arg(dataset, "InstitutionName", ARGS.iname)  # optionally change institution
         change_tag_if_arg(dataset, "InstitutionAddress", ARGS.iaddr)  # optionally change institution
         change_tag_if_arg(dataset, "ProtocolName", ARGS.proto)  # optionally change institution
         change_tag_if_arg(dataset, "Manufacturer", ARGS.mname)  # optionally change MM name
         change_tag_if_arg(dataset, "ManufacturerModelName", ARGS.mmname)  # optionally change MM name
+
         # custom DICOM tags settings alternative
         assign_custom_tags(dataset, ARGS.tags)
+
+        # do useful things with the series description 
+        if ARGS.desc != '':
+            change_tag_if_arg(dataset, "SeriesDescription", ARGS.desc) #optionally change study desc
+        else: # automatic tracking of transformations
+            try:
+                if desc_prefix!='':
+                    dataset.SeriesDescription = desc_prefix + ' ' + dataset.SeriesDescription
+            except Exception as exc:
+                print(exc)
+        dataset.SeriesDescription = truncate_str(dataset.SeriesDescription, 63)
 
         # write the 'transformed' DICOM out under the new filename
         dataset.save_as(output_filename)
@@ -748,8 +753,12 @@ def iterate_once(in_args, input_dir, output_dir):
     series_file_count = 0
 
     try:
-        series_desc_prefix = 'T[' + fmt_float3d('', in_args.x, in_args.y, in_args.z, ' ') \
-            + fmt_float3d('A', in_args.ax, in_args.ay, in_args.az, ' ') + '] '
+        if in_args.x!=0.0 or in_args.y!=0.0 or in_args.z!=0.0 or \
+            in_args.ax!=0.0 or in_args.ay!=0.0 or in_args.az!=0.0 :
+            series_desc_prefix = 'T[' + fmt_float3d('', in_args.x, in_args.y, in_args.z, ' ') \
+                + fmt_float3d('A', in_args.ax, in_args.ay, in_args.az, ' ') + ']'
+        else:
+            series_desc_prefix = ''
 
     except Exception:
         print("Could not convert the x, y,z offsets")

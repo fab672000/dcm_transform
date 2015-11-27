@@ -14,7 +14,7 @@
     <Name>dcm_transform</Name>
     <RootNamespace>pyTransform</RootNamespace>
     <LaunchProvider>Standard Python launcher</LaunchProvider>
-    <CommandLineArguments>single.dcm -an demo -iname Demo result.dcm -elp 60 30 20 20 1023 1.0 1  -pixel 60 92 1024 1.0 -crosshair 30 82 20 1 1024 1.0</CommandLineArguments>
+    <CommandLineArguments>examples\roi\single.dcm result.dcm -an demo -x 10 -dpt -tags ImplementationVersionName demo</CommandLineArguments>
     <EnableNativeCodeDebugging>False</EnableNativeCodeDebugging>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
