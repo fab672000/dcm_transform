@@ -66,7 +66,7 @@ except ImportError:
 #------------------------------------------------------------------------------
 def parse_arguments():
     """Parse all command line arguments"""
-    version = '1.1.3'
+    version = '1.1.4'
 
     timestamp = str(int(time.time()))
     series_uid = '1.2.3.4.' + timestamp + '.0.0.0'
