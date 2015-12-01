@@ -66,7 +66,7 @@ except ImportError:
 #------------------------------------------------------------------------------
 def parse_arguments():
     """Parse all command line arguments"""
-    version = '1.1.6'
+    version = '1.1.7'
 
     timestamp = str(int(time.time()))
     series_uid = '1.2.3.4.' + timestamp + '.0.0.0'
@@ -707,8 +707,12 @@ def transform(file_count, desc_prefix, input_filename, output_filename):
         draw_crosshair(dataset, ARGS.crosshair)     # set a crosshair in image buffer
 
         dataset.SeriesInstanceUID = ARGS.suid
-        dataset.SOPInstanceUID = ARGS.suid + '.' + str(dataset.InstanceNumber)
-        dataset.MediaStorageSOPInstanceUID =  dataset.SOPInstanceUID
+        suid = ARGS.suid + '.' + str(dataset.InstanceNumber)
+        dataset.SOPInstanceUID = suid
+        # breaks tag ordering ....
+        #dataset.MediaStorageSOPInstanceUID =  dataset.SOPInstanceUID
+        dataset.file_meta.data_element("MediaStorageSOPInstanceUID").value = suid
+        
         dataset.FrameOfReferenceUID = ARGS.foruid
 
         dataset.SeriesNumber = ARGS.sn
