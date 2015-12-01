@@ -66,11 +66,11 @@ except ImportError:
 #------------------------------------------------------------------------------
 def parse_arguments():
     """Parse all command line arguments"""
-    version = '1.1.4'
+    version = '1.1.5'
 
     timestamp = str(int(time.time()))
     series_uid = '1.2.3.4.' + timestamp + '.0.0.0'
-    frame_of_ref_uid = '3.2.1.0.' + timestamp + '.0.0.0'
+    frame_of_ref_uid = '2.3.4.0.' + timestamp + '.0.0.0'
 
     parser = argparse.ArgumentParser(description='dcm_transform, version ' \
                                      + version + ' (https://github.com/fab672000/dcmTransform). ')
@@ -707,7 +707,7 @@ def transform(file_count, desc_prefix, input_filename, output_filename):
         draw_crosshair(dataset, ARGS.crosshair)     # set a crosshair in image buffer
 
         dataset.SeriesInstanceUID = ARGS.suid
-        dataset.SOPInstanceUID = ARGS.suid + '.' + str(dataset.InstanceNumber)
+        #dataset.SOPInstanceUID = ARGS.suid + '.' + str(dataset.InstanceNumber)
         dataset.FrameOfReferenceUID = ARGS.foruid
 
         dataset.SeriesNumber = ARGS.sn
