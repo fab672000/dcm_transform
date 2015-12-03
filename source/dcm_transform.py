@@ -105,8 +105,12 @@ def parse_arguments():
                         help='Set Custom Series Instance UID')
     parser.add_argument('-foruid', nargs='?', type=str, default=frame_of_ref_uid, \
                         help='Set Custom Frame Of Reference UID')
-    parser.add_argument('-pid', nargs='?', type=str, default='id', \
-                        help='Set Custom PatientID when anon is on (see -an)')
+    parser.add_argument('-pid', nargs='?', type=str, default='', \
+                        help='Set Custom PatientID')
+    parser.add_argument('-pname', nargs='?', type=str, default='', \
+                        help='Set Custom PatientName')
+    parser.add_argument('-dob', nargs='?', type=str, default='', \
+                        help='Set Custom (Patient) Date of Birth')
     parser.add_argument('-iname', nargs='?', type=str, default='', \
                         help='Set InstitutionName')
     parser.add_argument('-iaddr', nargs='?', type=str, default='', \
@@ -217,6 +221,9 @@ def set_str_vec(sarray, val, dim):
 #------------------------------------------------------------------------------
 def compute_3d_transforms(dataset):
     """Compute all 3d transforms (translation/rotation) and update"""
+
+    if not is_tranformation3D(ARGS): 
+        return 
 
     pos = [dataset.ImagePositionPatient[0].real, \
            dataset.ImagePositionPatient[1].real, dataset.ImagePositionPatient[2].real, 1.]
@@ -643,7 +650,11 @@ def anonymize_tags_if_anon(dataset,remove_curves=False, remove_private_tags=Fals
     dataset.walk(PN_callback)
 
     if ARGS.an != '':
-        dataset.PatientID = ARGS.pid
+        if ARGS.pid != '': 
+            dataset.PatientID = ARGS.pid
+        else:
+            dataset.PatientID = 'id'
+
         change_tag_if_arg(dataset, "InstitutionName", ARGS.an)  # optionally change institution
         change_tag_if_arg(dataset, "InstitutionAddress",  ARGS.an)  # optionally change institution
         change_tag_if_arg(dataset, "StationName",  ARGS.an)  # optionally change institution
@@ -709,8 +720,7 @@ def transform(file_count, desc_prefix, input_filename, output_filename):
         dataset.SeriesInstanceUID = ARGS.suid
         suid = ARGS.suid + '.' + str(dataset.InstanceNumber)
         dataset.SOPInstanceUID = suid
-        # breaks tag ordering ....
-        #dataset.MediaStorageSOPInstanceUID =  dataset.SOPInstanceUID
+        # do not use:  dataset.MediaStorageSOPInstanceUID =  dataset.SOPInstanceUID
         dataset.file_meta.data_element("MediaStorageSOPInstanceUID").value = suid
         
         dataset.FrameOfReferenceUID = ARGS.foruid
@@ -729,6 +739,9 @@ def transform(file_count, desc_prefix, input_filename, output_filename):
         change_tag_if_arg(dataset, "ProtocolName", ARGS.proto)  # optionally change institution
         change_tag_if_arg(dataset, "Manufacturer", ARGS.mname)  # optionally change MM name
         change_tag_if_arg(dataset, "ManufacturerModelName", ARGS.mmname)  # optionally change MM name
+        change_tag_if_arg(dataset, "PatientID", ARGS.pid)  # optionally change MM name
+        change_tag_if_arg(dataset, "PatientName", ARGS.pname)  # optionally change MM name
+        change_tag_if_arg(dataset, "PatientBirthDate", ARGS.dob) #optionally change the patient date of birth
 
         # custom DICOM tags settings alternative
         assign_custom_tags(dataset, ARGS.tags)
@@ -751,15 +764,20 @@ def transform(file_count, desc_prefix, input_filename, output_filename):
         print(exc)
 
     return file_count
-
+#------------------------------------------------------------------------------
+def is_tranformation3D(in_args):
+    """Determine if any 3d transform on image position patient needs to be computed"""
+    if in_args.x!=0.0 or in_args.y!=0.0 or in_args.z!=0.0 or \
+        in_args.ax!=0.0 or in_args.ay!=0.0 or in_args.az!=0.0 :
+        return True
+    return False
 #------------------------------------------------------------------------------
 def iterate_once(in_args, input_dir, output_dir):
     """Execute the full script except the recursive option"""
     series_file_count = 0
 
     try:
-        if in_args.x!=0.0 or in_args.y!=0.0 or in_args.z!=0.0 or \
-            in_args.ax!=0.0 or in_args.ay!=0.0 or in_args.az!=0.0 :
+        if is_tranformation3D(in_args):
             series_desc_prefix = 'T[' + fmt_float3d('', in_args.x, in_args.y, in_args.z, ' ') \
                 + fmt_float3d('A', in_args.ax, in_args.ay, in_args.az, ' ') + ']'
         else:
