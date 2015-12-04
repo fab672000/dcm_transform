@@ -46,15 +46,9 @@
 """
 
 from __future__ import print_function
-import os
-import sys
-#import platform
+import os, sys, math, argparse, time
 import os.path
-import argparse
-import time
 from datetime import datetime, timedelta
-
-import math
 
 import numpy as np
 #from scipy import linalg
@@ -358,7 +352,7 @@ def assign_custom_tags(dataset, args):
             print("Setting tag " + args[i] + " to " + args[i + 1] + ' ... ')
             try:
                 data_element = dataset.data_element(args[i])
-            except KeyError as exc: #OK, maybe user wants a tag that is in file_meta metadata structure 
+            except KeyError as exc: #OK, maybe user wants a tag that is in file_meta metadata structure
                                     #so give it a second chance:
                 data_element = dataset.file_meta.data_element(args[i])
 
@@ -416,7 +410,7 @@ def draw_frect(pixel_buffer, pos_x, pos_y, width, height, val, alpha=1.0):
         draw_hline(pixel_buffer, pos_x, i, width, 1, val, alpha)
 #------------------------------------------------------------------------------
 def draw_xhair(pixel_buffer, pos_x, pos_y, pen_size, width, val, alpha=1.0):
-    """ Draws a cross hair  in the buffer at x, y with size s and pen width w 
+    """ Draws a cross hair  in the buffer at x, y with size s and pen width w
         with intensity val and alpha blending alpha"""
     rounded_width = int(width / 2 * 2) + 1
     half_width = (rounded_width - 1) / 2
