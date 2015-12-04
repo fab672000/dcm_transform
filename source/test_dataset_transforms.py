@@ -10,7 +10,7 @@ import dcm_transform
 
 import os, os.path, time
 #, sys, math, argparse
-from datetime import datetime, timedelta
+#from datetime import datetime, timedelta
 #import numpy as np
 #from scipy import linalg
 
@@ -25,7 +25,6 @@ class DcmTestCase(unittest.TestCase):
     dcm_data_root = 'examples\\data\\'
     image1 = 'brain1.dcm'
     dataset = None
-    
     input_ds_path = os.path.join(dcm_data_root, image1)
     output_ds_path = os.path.join(dcm_data_root, 'result.dcm')
 
@@ -33,19 +32,58 @@ class DcmTestCase(unittest.TestCase):
     series_uid = '1.2.3.4.' + timestamp + '.0.0.0'
     sopiuid = series_uid + '.' + '42'
     frame_of_ref_uid = '2.3.4.0.' + timestamp + '.0.0.0'
+    in_args = None
+    test_args = None
+    file_count = 0
 
     def setUp(self):
         self.dataset = dicom.read_file(self.input_ds_path)
+        self.in_args = [self.input_ds_path, self.output_ds_path]
+        self.test_args = dcm_transform.parse_arguments(self.in_args)
 
 class DcmTestTagChanges(DcmTestCase):
-    """ test dcm_transform tag changing options"""  
-    
-    def test_A(self):
+    """ Test dcm_transform tag changing options"""
+
+    def instanciate_sut_transform(self, args, file_count=0, in_file=None, out_file=None):
+        """Call the sut transform funtion with predef'd parameters for testing purpose """
+        if in_file == None:
+            in_file = self.input_ds_path
+        if out_file == None:
+            out_file = self.output_ds_path
+
+        self.file_count, dataset = dcm_transform.transform(file_count, args, '', in_file, out_file)
+        return self.file_count, dataset
+
+    def test_anon1(self):
+        """Test anonymization (with dpt) """
+        str_anon = 'test_anon1'
+        self.in_args.extend(['-an', str_anon, '-dpt'])
+        self.test_args = dcm_transform.parse_arguments(self.in_args)
+
+        # needed because dataset.walk(PN_Callback) does not give an optional data param:
+        dcm_transform.ARGS = self.test_args
+        dcm_transform.anonymize_tags_if_anon(self.dataset, self.test_args, True, True)
+
+    def test_patient_tags(self):
+        """Test common patient tags settings"""
+        self.in_args.extend(['-pid', '1234', '-pname', 'doe^john', '-dob', '19420402'])
+        self.test_args = dcm_transform.parse_arguments(self.in_args)
+
+        file_count, dataset = self.instanciate_sut_transform(self.test_args)
+
+        self.assertEqual(file_count, 1)
+        self.assertEqual(dataset.PatientName, 'doe^john')
+        self.assertEqual(dataset.PatientID, '1234')
+        self.assertEqual(dataset.PatientBirthDate, '19420402')
+
+    def test_generate_uids(self):
+        """Test common patient tags settings"""
         self.assertNotEqual(self.series_uid, self.dataset.SeriesInstanceUID)
         self.assertNotEqual(self.sopiuid, self.dataset.SOPInstanceUID)
         self.assertNotEqual(self.frame_of_ref_uid, self.dataset.FrameOfReferenceUID)
 
-        dcm_transform.generate_new_uids(self.dataset, self.series_uid, self.frame_of_ref_uid, self.sopiuid)
+        dcm_transform.generate_new_uids(self.dataset, self.series_uid, \
+            self.frame_of_ref_uid, self.sopiuid)
 
         self.assertEqual(self.series_uid, self.dataset.SeriesInstanceUID)
         self.assertEqual(self.sopiuid, self.dataset.SOPInstanceUID)

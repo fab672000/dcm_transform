@@ -58,13 +58,13 @@ except ImportError:
     import pydicom as dicom
 
 #------------------------------------------------------------------------------
-def parse_arguments():
+def parse_arguments(the_args=None):
     """Parse all command line arguments"""
     version = '1.1.8'
 
     timestamp = str(int(time.time()))
-    series_uid = '1.2.3.4.' + timestamp + '.0.0.0'
-    frame_of_ref_uid = '2.3.4.0.' + timestamp + '.0.0.0'
+    defaulf_series_uid = '1.2.3.4.' + timestamp + '.0.0.0'
+    defaulf_frame_of_ref_uid = '2.3.4.0.' + timestamp + '.0.0.0'
 
     parser = argparse.ArgumentParser(description='dcm_transform, version ' \
                                      + version + ' (https://github.com/fab672000/dcmTransform). ')
@@ -95,9 +95,9 @@ def parse_arguments():
                         help='Set Custom (Series) Description')
     parser.add_argument('-sdesc', nargs='?', type=str, default='', \
                         help='Set Custom Study Description')
-    parser.add_argument('-suid', nargs='?', type=str, default=series_uid, \
+    parser.add_argument('-suid', nargs='?', type=str, default=defaulf_series_uid, \
                         help='Set Custom Series Instance UID')
-    parser.add_argument('-foruid', nargs='?', type=str, default=frame_of_ref_uid, \
+    parser.add_argument('-foruid', nargs='?', type=str, default=defaulf_frame_of_ref_uid, \
                         help='Set Custom Frame Of Reference UID')
     parser.add_argument('-pid', nargs='?', type=str, default='', \
                         help='Set Custom PatientID')
@@ -126,47 +126,47 @@ def parse_arguments():
 
     parser.add_argument('-atime', nargs='?', type=str, default='', help='Change acquisition time')
     parser.add_argument('-adelta', nargs='?', type=str, default='', \
-                        help='Change acq. delta in seconds (i.e. 7.78), ' + \
-                            'will beapplied sequentially to each file acq time', \
-                        metavar=('DELTA_SECS'))
+        help='Change acq. delta in seconds (i.e. 7.78), ' + \
+            'will beapplied sequentially to each file acq time', \
+        metavar=('DELTA_SECS'))
     parser.add_argument('-adate', nargs='?', type=str, default='', help='Change acquisition date')
 
     parser.add_argument('-tags', nargs='+', type=str, default='', \
-                        help='Set your custom tags from  a <tag_name, tag_value> sequence !', \
-                        metavar=('TAG_NAME', 'TAG_VALUE'))
+        help='Set your custom tags from  a <tag_name, tag_value> sequence !', \
+        metavar=('TAG_NAME', 'TAG_VALUE'))
 
     parser.add_argument('-pixel', nargs='+', type=str, default='', \
-                        help='Set one pixel value in each file ', \
-                        metavar=('ROW_COL_VAL_1', 'ROW_COL_VAL_2'))
+        help='Set one pixel value in each file ', \
+        metavar=('ROW_COL_VAL_1', 'ROW_COL_VAL_2'))
 
     parser.add_argument('-roi', nargs='+', type=str, default='', \
-                        help='Set a squared ROI of width LEN starting at top-left position x, y ' + \
-                            'of pixel value val.', \
-                        metavar=('X, Y, LEN, VAL', '...'))
+        help='Set a squared ROI of width LEN starting at top-left position x, y ' + \
+            'of pixel value val.', \
+        metavar=('X, Y, LEN, VAL', '...'))
 
     parser.add_argument('-crosshair', nargs='+', type=str, default='', \
-                        help='Set a crosshair at top-left pos x, y of size S and line width W(odd number)' + \
-                            ' with an intensity I and alpha blending A.', \
-                        metavar=('X, Y, S, W, I, A', '...'))
+        help='Set a crosshair at top-left pos x, y of size S and line width W(odd number)' + \
+            ' with an intensity I and alpha blending A.', \
+        metavar=('X, Y, S, W, I, A', '...'))
 
     parser.add_argument('-elp', nargs='+', type=str, default='', \
-                        help='Set an ellipse at top-left pos x, y of width radius w and radius h' + \
-                            ' with intensity I and alpha blending A and cos/sin steps S(i.e. 120) .', \
-                        metavar=('X, Y, W, H, I, A, S', '...'))
+        help='Set an ellipse at top-left pos x, y of width radius w and radius h' + \
+            ' with intensity I and alpha blending A and cos/sin steps S(i.e. 120) .', \
+        metavar=('X, Y, W, H, I, A, S', '...'))
 
     parser.add_argument('-rect', nargs='+', type=str, default='', \
-                        help='Set a rectangle at top-left pos x, y of width w and height h and step S ' + \
-                            'with intensity I and alpha blending A.', \
-                        metavar=('X, Y, W, H, S, I, A', '...'))
+        help='Set a rectangle at top-left pos x, y of width w and height h and step S ' + \
+            'with intensity I and alpha blending A.', \
+        metavar=('X, Y, W, H, S, I, A', '...'))
 
     parser.add_argument('-frect', nargs='+', type=str, default='', \
-                        help='Set a filled rectangle at top-left pos x, y of width w and height h, S ' + \
-                            'with intensity I and alpha blending A.', \
-                        metavar=('X, Y, W, H, I, A', '...'))
+        help='Set a filled rectangle at top-left pos x, y of width w and height h, S ' + \
+            'with intensity I and alpha blending A.', \
+        metavar=('X, Y, W, H, I, A', '...'))
 
     #parser.print_help()
 
-    ret_args = parser.parse_args()
+    ret_args = parser.parse_args(the_args)
     return ret_args
 
 #------------------------------------------------------------------------------
@@ -218,8 +218,8 @@ def set_str_vec(sarray, val, dim):
         sarray[i] = str(val[i])
 
 #------------------------------------------------------------------------------
-def generate_sop_instance_uid_from_series_uid(series_uid, instance_number):
-    return series_uid + '.' + str(instance_number)
+def generate_soiud_from_seriesuid(defaulf_series_uid, instance_number):
+    return defaulf_series_uid + '.' + str(instance_number)
 
 #------------------------------------------------------------------------------
 def generate_new_uids(dataset, suid, foruid, sopiuid):
@@ -234,14 +234,14 @@ def generate_new_uids(dataset, suid, foruid, sopiuid):
     dataset.FrameOfReferenceUID = foruid
 
 #------------------------------------------------------------------------------
-def compute_3d_transforms(dataset):
+def compute_3d_transforms(dataset, args):
     """Compute all 3d transforms (translation/rotation) and update"""
 
-    if not is_3d_tranformation(ARGS):
+    if not is_3d_tranformation(args):
         return
 
     #Generate new UIDs automatically when any transform changes the geometry
-    generate_new_uids(dataset, ARGS.suid, ARGS.foruid, generate_sop_instance_uid_from_series_uid(series_uid, dataset.InstanceNumber))
+    generate_new_uids(dataset, args.suid, args.foruid, generate_soiud_from_seriesuid(defaulf_series_uid, dataset.InstanceNumber))
 
     pos = [dataset.ImagePositionPatient[0].real, \
            dataset.ImagePositionPatient[1].real, dataset.ImagePositionPatient[2].real, 1.]
@@ -251,15 +251,15 @@ def compute_3d_transforms(dataset):
            dataset.ImageOrientationPatient[4].real, dataset.ImageOrientationPatient[5].real, 1.]
     xform = np.identity(4)
 
-    matrix_set_rotation(xform, ARGS.ax, ARGS.ay, ARGS.az)
+    matrix_set_rotation(xform, args.ax, args.ay, args.az)
 
     precision = 5
     new_row = np.around(xform.dot(row), precision)
     new_col = np.around(xform.dot(col), precision)
     new_orient = np.concatenate([new_row[:3], new_col[:3]])
 
-    matrix_set_translation(xform, ARGS.x, ARGS.y, ARGS.z)
-    new_pos = np.around([pos[0] + ARGS.x, pos[1] + ARGS.y, pos[2] + ARGS.z], precision)
+    matrix_set_translation(xform, args.x, args.y, args.z)
+    new_pos = np.around([pos[0] + args.x, pos[1] + args.y, pos[2] + args.z], precision)
 
     #update dataset with new values
     set_str_vec(dataset.ImagePositionPatient, new_pos[:3], 3)
@@ -331,10 +331,9 @@ def get_dicom_time_from(dtime):
 # Define call-back functions for the dataset.walk() function
 def PN_callback(dataset, data_element):
     """Called from the dataset "walk" recursive function for all data elements."""
-    if ARGS.an != '':
-        if data_element.VR == "PN":
-            data_element.value = ARGS.an
-        #print (data_element.value)
+    if data_element.VR == "PN":
+        data_element.value = ARGS.an
+    #print (data_element.value)
 #------------------------------------------------------------------------------
 def curves_callback(dataset, data_element):
     """Called from the dataset "walk" recursive function for all data elements."""
@@ -639,20 +638,20 @@ def change_tag_if_arg(dataset, tag, arg):
         except Exception as exc:
             print(exc)
 #------------------------------------------------------------------------------
-def transform_dates(file_count, dataset):
+def transform_dates(file_count, dataset, args):
     """Transform acquisition date or time, or series date or time"""
-    change_tag_if_arg(dataset, "SeriesDate", ARGS.date)
-    change_tag_if_arg(dataset, "SeriesTime", ARGS.time)
-    change_tag_if_arg(dataset, "StudyDate", ARGS.sdate)
-    change_tag_if_arg(dataset, "StudyTime", ARGS.stime)
-    change_tag_if_arg(dataset, "ContentDate", ARGS.cdate)
-    change_tag_if_arg(dataset, "ContentTime", ARGS.ctime)
-    change_tag_if_arg(dataset, "AcquisitionDate", ARGS.adate)
-    change_tag_if_arg(dataset, "AcquisitionTime", ARGS.atime)
+    change_tag_if_arg(dataset, "SeriesDate", args.date)
+    change_tag_if_arg(dataset, "SeriesTime", args.time)
+    change_tag_if_arg(dataset, "StudyDate", args.sdate)
+    change_tag_if_arg(dataset, "StudyTime", args.stime)
+    change_tag_if_arg(dataset, "ContentDate", args.cdate)
+    change_tag_if_arg(dataset, "ContentTime", args.ctime)
+    change_tag_if_arg(dataset, "AcquisitionDate", args.adate)
+    change_tag_if_arg(dataset, "AcquisitionTime", args.atime)
 
     try:
-        if ARGS.adelta != '':
-            secs_offset = str(float(ARGS.adelta) * file_count)
+        if args.adelta != '':
+            secs_offset = str(float(args.adelta) * file_count)
             current_time = modify_time(dataset.AcquisitionDate, dataset.AcquisitionTime, \
                                         secs_offset)
             dataset.AcquisitionDate = get_dicom_date_from(current_time)
@@ -661,31 +660,32 @@ def transform_dates(file_count, dataset):
         print(exc)
 
 #------------------------------------------------------------------------------
-def anonymize_tags_if_anon(dataset, remove_curves=False, remove_private_tags=False):
+def anonymize_tags_if_anon(dataset, args, remove_curves=False, remove_private_tags=False):
     """ Anonymize dataset tags"""
     # Series Description gets automatically populated with useful transform
     # info by default:
     # Remove patient name and any other person names
 
-    dataset.walk(PN_callback)
+    if args.an != '':
+        dataset.walk(PN_callback)
 
-    if ARGS.an != '':
-        if ARGS.pid != '':
-            dataset.PatientID = ARGS.pid
+    if args.an != '':
+        if args.pid != '':
+            dataset.PatientID = args.pid
         else:
             dataset.PatientID = 'id'
 
-        change_tag_if_arg(dataset, "InstitutionName", ARGS.an)
-        change_tag_if_arg(dataset, "InstitutionAddress", ARGS.an)
-        change_tag_if_arg(dataset, "StationName", ARGS.an)
-        change_tag_if_arg(dataset, "SequenceName", ARGS.an)
-        change_tag_if_arg(dataset, "ProtocolName", ARGS.an)
+        change_tag_if_arg(dataset, "InstitutionName", args.an)
+        change_tag_if_arg(dataset, "InstitutionAddress", args.an)
+        change_tag_if_arg(dataset, "StationName", args.an)
+        change_tag_if_arg(dataset, "SequenceName", args.an)
+        change_tag_if_arg(dataset, "ProtocolName", args.an)
         change_tag_if_arg(dataset, "ContentDate", '19010101')
         change_tag_if_arg(dataset, "ContentTime", '000000.000000')
         change_tag_if_arg(dataset, "PerformedProcedureStepStartDate", '19010101')
         change_tag_if_arg(dataset, "PerformedProcedureStepStartTime", '000000.000000')
         change_tag_if_arg(dataset, "PerformedProcedureStepID", "0")
-        change_tag_if_arg(dataset, "PerformedProcedureStepDescription", ARGS.an)
+        change_tag_if_arg(dataset, "PerformedProcedureStepDescription", args.an)
 
         # Remove data elements (should only do so if DICOM type 3 optional)
         # Use general loop so easy to add more later
@@ -717,7 +717,7 @@ def truncate_str(input_str, maxlen, ending='..'):
         return input_str[:(maxlen - len(ending))] + ending
     return input_str
 #------------------------------------------------------------------------------
-def transform(file_count, desc_prefix, input_filename, output_filename):
+def transform(file_count, args, desc_prefix, input_filename, output_filename):
     """Replace data element values to partly transform a DICOM file.
     Note: completely transforming a DICOM file is very complicated; there
     are many things this example code does not address. USE AT YOUR OWN RISK.
@@ -729,41 +729,41 @@ def transform(file_count, desc_prefix, input_filename, output_filename):
         dataset = dicom.read_file(input_filename)
 
         # 3d xforms user cmd options
-        compute_3d_transforms(dataset)
+        compute_3d_transforms(dataset, args)
 
-        set_image_pixels(dataset, ARGS.pixel)       # set pixels in image buffer
-        draw_roi(dataset, ARGS.roi)                 # set a ROI square in image buffer
-        draw_ellipse(dataset, ARGS.elp)             # set an ellipse
-        draw_rectangle(dataset, ARGS.rect)          # set a rectangle in image buffer
-        draw_frectangle(dataset, ARGS.frect)        # set a filled rectangle in image buffer
-        draw_crosshair(dataset, ARGS.crosshair)     # set a crosshair in image buffer
+        set_image_pixels(dataset, args.pixel)       # set pixels in image buffer
+        draw_roi(dataset, args.roi)                 # set a ROI square in image buffer
+        draw_ellipse(dataset, args.elp)             # set an ellipse
+        draw_rectangle(dataset, args.rect)          # set a rectangle in image buffer
+        draw_frectangle(dataset, args.frect)        # set a filled rectangle in image buffer
+        draw_crosshair(dataset, args.crosshair)     # set a crosshair in image buffer
 
-        if ARGS.sn > 0:
-            dataset.SeriesNumber = ARGS.sn
+        if args.sn > 0:
+            dataset.SeriesNumber = args.sn
 
         # Anonymize dataset tags
-        anonymize_tags_if_anon(dataset, False, ARGS.delete_private_tags)
+        anonymize_tags_if_anon(dataset, args, False, args.delete_private_tags)
 
         # Deal with all sorts of dates and time if user asks for it:
-        transform_dates(file_count, dataset)
+        transform_dates(file_count, dataset, args)
 
         #optional changes of useful tags if they have a non default / set value:
-        change_tag_if_arg(dataset, "StudyDescription", ARGS.sdesc)
-        change_tag_if_arg(dataset, "InstitutionName", ARGS.iname)
-        change_tag_if_arg(dataset, "InstitutionAddress", ARGS.iaddr)
-        change_tag_if_arg(dataset, "ProtocolName", ARGS.proto)
-        change_tag_if_arg(dataset, "Manufacturer", ARGS.mname)
-        change_tag_if_arg(dataset, "ManufacturerModelName", ARGS.mmname)
-        change_tag_if_arg(dataset, "PatientID", ARGS.pid)
-        change_tag_if_arg(dataset, "PatientName", ARGS.pname)
-        change_tag_if_arg(dataset, "PatientBirthDate", ARGS.dob)
+        change_tag_if_arg(dataset, "StudyDescription", args.sdesc)
+        change_tag_if_arg(dataset, "InstitutionName", args.iname)
+        change_tag_if_arg(dataset, "InstitutionAddress", args.iaddr)
+        change_tag_if_arg(dataset, "ProtocolName", args.proto)
+        change_tag_if_arg(dataset, "Manufacturer", args.mname)
+        change_tag_if_arg(dataset, "ManufacturerModelName", args.mmname)
+        change_tag_if_arg(dataset, "PatientID", args.pid)
+        change_tag_if_arg(dataset, "PatientName", args.pname)
+        change_tag_if_arg(dataset, "PatientBirthDate", args.dob)
 
         # custom DICOM tags settings alternative
-        assign_custom_tags(dataset, ARGS.tags)
+        assign_custom_tags(dataset, args.tags)
 
         # do useful things with the series description
-        if ARGS.desc != '':
-            change_tag_if_arg(dataset, "SeriesDescription", ARGS.desc) #optionally change study desc
+        if args.desc != '':
+            change_tag_if_arg(dataset, "SeriesDescription", args.desc) #optionally change study desc
         else: # automatic tracking of transformations
             try:
                 if desc_prefix != '':
@@ -778,7 +778,7 @@ def transform(file_count, desc_prefix, input_filename, output_filename):
     except Exception as exc:
         print(exc)
 
-    return file_count
+    return file_count, dataset
 #------------------------------------------------------------------------------
 def is_3d_tranformation(in_args):
     """Determine if any 3d transform on image position patient needs to be computed"""
@@ -813,14 +813,14 @@ def iterate_once(in_args, input_dir, output_dir):
         for filename in fnames:
             if not os.path.isdir(os.path.join(input_dir, filename)):
                 print('Transforming ' + series_desc_prefix + filename + " ...", end='')
-                series_file_count = transform(series_file_count, series_desc_prefix, \
+                series_file_count, dataset = transform(series_file_count, ARGS, series_desc_prefix, \
                                        os.path.join(input_dir, filename), \
                                        os.path.join(output_dir, filename))
                 print(" done\r")
     else:  # first arg not a directory, assume two files given
         in_filename = in_args.input_series
         out_filename = in_args.output_series
-        transform(series_file_count, series_desc_prefix, in_filename, out_filename)
+        transform(series_file_count, ARGS, series_desc_prefix, in_filename, out_filename)
     print()
 
 #------------------------------------------------------------------------------

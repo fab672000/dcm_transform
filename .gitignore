@@ -1,3 +1,4 @@
 source/transformed/
 source/original/
 *.pyc
+source/examples/data/result.dcm
