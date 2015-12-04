@@ -10,7 +10,7 @@
         seriesnum generation and more.
     - Supports 3D transforms (ImagePositionPatient and ImageOrientationPatient)
         by allowing adding position offset
-          or rotating the image (see -x,-y,-z,-ax,-ay &-az script parameters).
+          or rotating the image (see -x, -y, -z, -ax, -ay &-az script parameters).
     - Supports changing any dicom tag value that can be expressed
         as a key, value pair (see -tags parameter).
     - Support recursive tree traversal in order to run in batch mode
@@ -96,7 +96,7 @@ def parse_arguments():
     parser.add_argument('-ay', nargs='?', type=float, default=0.0, help='AY rotate angle in deg')
     parser.add_argument('-az', nargs='?', type=float, default=0.0, help='AZ rotate angle in deg')
 
-    parser.add_argument('-sn', nargs='?', type=int, default=66, help='Output Series  Number')
+    parser.add_argument('-sn', nargs='?', type=int, default=-1, help='Output Series  Number')
     parser.add_argument('-desc', nargs='?', type=str, default='', \
                         help='Set Custom (Series) Description')
     parser.add_argument('-sdesc', nargs='?', type=str, default='', \
@@ -147,23 +147,23 @@ def parse_arguments():
 
     parser.add_argument('-roi', nargs='+', type=str, default='', \
                         help='Set a squared ROI of width LEN starting at top-left position x, y of pixel value val.', \
-                        metavar=('X,Y,LEN,VAL', 'X,Y,LEN, VAL'))
+                        metavar=('X, Y, LEN, VAL', 'X, Y, LEN, VAL'))
 
     parser.add_argument('-crosshair', nargs='+', type=str, default='', \
-                        help='Set a crosshair at top-left pos x,y of size S and line width W(odd number) with an intensity I and alpha blending A.', \
-                        metavar=('X,Y,S,W,I,A', 'X,Y,S,W,I,A'))
+                        help='Set a crosshair at top-left pos x, y of size S and line width W(odd number) with an intensity I and alpha blending A.', \
+                        metavar=('X, Y, S, W, I, A', 'X, Y, S, W, I, A'))
 
     parser.add_argument('-elp', nargs='+', type=str, default='', \
-                        help='Set an ellipse at top-left pos x,y of width radius w and radius height with intensity I and alpha blending A and cos/sin steps S(i.e. 120) .', \
-                        metavar=('X,Y,W,H,I,A,S', 'X,Y,W,H,S,I,A'))
+                        help='Set an ellipse at top-left pos x, y of width radius w and radius height with intensity I and alpha blending A and cos/sin steps S(i.e. 120) .', \
+                        metavar=('X, Y, W, H, I, A, S', 'X, Y, W, H, S, I, A'))
 
     parser.add_argument('-rect', nargs='+', type=str, default='', \
-                        help='Set a rectangle at top-left pos x,y of width w and height h and step S with intensity I and alpha blending A.', \
-                        metavar=('X,Y,W,H,S,I,A', 'X,Y,W,H,S,I,A'))
+                        help='Set a rectangle at top-left pos x, y of width w and height h and step S with intensity I and alpha blending A.', \
+                        metavar=('X, Y, W, H, S, I, A', 'X, Y, W, H, S, I, A'))
 
     parser.add_argument('-frect', nargs='+', type=str, default='', \
-                        help='Set a filled rectangle at top-left pos x,y of width w and height h, S with intensity I and alpha blending A.', \
-                        metavar=('X,Y,W,H,I,A', 'X,Y,W,H,I,A'))
+                        help='Set a filled rectangle at top-left pos x, y of width w and height h, S with intensity I and alpha blending A.', \
+                        metavar=('X, Y, W, H, I, A', 'X, Y, W, H, I, A'))
 
     #parser.print_help()
 
@@ -219,11 +219,26 @@ def set_str_vec(sarray, val, dim):
         sarray[i] = str(val[i])
 
 #------------------------------------------------------------------------------
+def generate_new_uids(dataset, suid):
+    """Generate new series, FOR, SOP Instance uids"""
+    #Generate new UIDs automatically when any transform changes the geometry
+    dataset.SeriesInstanceUID = suid
+    sopiuid = suid + '.' + str(dataset.InstanceNumber)
+    dataset.SOPInstanceUID = sopiuid
+    dataset.file_meta.data_element("MediaStorageSOPInstanceUID").value = sopiuid # do not use:  dataset.MediaStorageSOPInstanceUID =  dataset.SOPInstanceUID
+
+    # Generate a new FORUID too
+    dataset.FrameOfReferenceUID = ARGS.foruid
+
+#------------------------------------------------------------------------------
 def compute_3d_transforms(dataset):
     """Compute all 3d transforms (translation/rotation) and update"""
 
     if not is_tranformation3D(ARGS): 
         return 
+
+    #Generate new UIDs automatically when any transform changes the geometry
+    generate_new_uids(dataset, ARGS.suid)
 
     pos = [dataset.ImagePositionPatient[0].real, \
            dataset.ImagePositionPatient[1].real, dataset.ImagePositionPatient[2].real, 1.]
@@ -325,7 +340,7 @@ def curves_callback(ds, data_element):
 
 #------------------------------------------------------------------------------
 def assign_custom_tags(dataset, args):
-    """ Given a dataset and the args key,val pair array  arguments set custom tags"""
+    """ Given a dataset and the args key, val pair array  arguments set custom tags"""
     # assign custom tags
     if args == '':
         return
@@ -357,55 +372,55 @@ def assign_custom_tags(dataset, args):
         print(exc)
 #------------------------------------------------------------------------------
 def draw_pixel(buffer, x, w, xstep, y, h, ystep, val, alpha=1.0):
-    """Set a pixel buffer value val at x,y to x+w,y+h with an xstep and ystep increments """
+    """Set a pixel buffer value val at x, y to x+w, y+h with an xstep and ystep increments """
     for col in range(int(x), int(x+w), xstep):
         for row in range(int(y), int(y+h), ystep):
-#            print(col,row)
-            orig = buffer[row,col]*(1-alpha)
+#            print(col, row)
+            orig = buffer[row, col]*(1-alpha)
             new = val* alpha
             blend = orig + new
             buffer[row, col]=blend
 #------------------------------------------------------------------------------
 def draw_hline(buffer, x, y, w, step, val, alpha=1.0):
-    """Draw an horizontal line starting at x,y of width w with step step and value val """
+    """Draw an horizontal line starting at x, y of width w with step step and value val """
     draw_pixel(buffer, x, w, step, y, 1, 1, val, alpha)
 #------------------------------------------------------------------------------
 def draw_vline(buffer, x, y, h, step, val, alpha=1.0):
-    """Set a pixel buffer value val at x,y to x+w,y+h with an xstep and ystep increments """
+    """Set a pixel buffer value val at x, y to x+w, y+h with an xstep and ystep increments """
     draw_pixel(buffer, x, 1, 1, y, h, step, val, alpha)
 #------------------------------------------------------------------------------
-def draw_elp(buffer, x,y, w, h, val, alpha=1.0, step=1):
+def draw_elp(buffer, x, y, w, h, val, alpha=1.0, step=1):
     """ Draws an ellipse"""
-    s =step 
-    for theta in range(0,360, s):
+    s = step
+    for theta in range(0, 360, s):
         x1 = x + w/2.0*math.cos(theta/180.0*math.pi)
         y1 = y - h/2.0*math.sin(theta/180.0*math.pi)
-        draw_pixel(buffer,int(x1),1,1,int(y1),1,1, val, alpha)
+        draw_pixel(buffer, int(x1), 1, 1, int(y1), 1, 1, val, alpha)
 #------------------------------------------------------------------------------
 def draw_rect(buffer, x, y, w, h, step, val, alpha=1.0):
-    """Draws a rect in the buffer at x,y to x+w,y+h with an xstep and ystep increments """
+    """Draws a rect in the buffer at x, y to x+w, y+h with an xstep and ystep increments """
     draw_hline(buffer, x,     y,     w, step, val, alpha)
     draw_hline(buffer, x,     y+h-1, w, step, val, alpha)
     draw_vline(buffer, x,     y,     h, step, val, alpha)
     draw_vline(buffer, x+w-1, y,     h, step, val, alpha)
 #------------------------------------------------------------------------------
 def draw_frect(buffer, x, y, w, h, val, alpha=1.0):
-    """Draws a rect in the buffer at x,y to x+w,y+h with an [0,] transparency factor """
+    """Draws a rect in the buffer at x, y to x+w, y+h with an [0, ] transparency factor """
     for i in range(int(y), int(y+h)):
         draw_hline(buffer, x,     i,     w, 1, val, alpha)
 #------------------------------------------------------------------------------
 def draw_xhair(buffer, x, y, s, w, val, alpha=1.0):
-    """Draws a cross hair  in the buffer at x,y with size s and pen width w with intensity val and alpha blending alpha"""
+    """Draws a cross hair  in the buffer at x, y with size s and pen width w with intensity val and alpha blending alpha"""
     cw = int(w/2*2)+1
     w2=(cw-1)/2
     line_len = int(s)
     draw_frect(buffer, x-line_len, y-w2, line_len-w2, cw, val, alpha)
     draw_frect(buffer, x+w2+1,     y-w2, line_len-w2, cw, val, alpha)
     draw_frect(buffer, x-w2,       y-line_len,  cw, line_len-w2, val, alpha)
-    draw_frect(buffer, x-w2,       y+1+w2,cw, line_len-w2, val, alpha)
+    draw_frect(buffer, x-w2,       y+1+w2, cw, line_len-w2, val, alpha)
 #------------------------------------------------------------------------------
 def set_image_pixels(dataset, args):
-    """ Given a dataset and the args key,val pair array  arguments set custom tags"""
+    """ Given a dataset and the args key, val pair array  arguments set custom tags"""
     # assign custom tags
     if args == '':
         return
@@ -641,7 +656,7 @@ def transform_dates(file_count, dataset):
         print(exc)
 
 #------------------------------------------------------------------------------
-def anonymize_tags_if_anon(dataset,remove_curves=False, remove_private_tags=False):
+def anonymize_tags_if_anon(dataset, remove_curves=False, remove_private_tags=False):
     """ Anonymize dataset tags"""
     # Series Description gets automatically populated with useful transform
     # info by default:
@@ -717,15 +732,7 @@ def transform(file_count, desc_prefix, input_filename, output_filename):
         draw_frectangle(dataset, ARGS.frect)        # set a filled rectangle in image buffer
         draw_crosshair(dataset, ARGS.crosshair)     # set a crosshair in image buffer
 
-        dataset.SeriesInstanceUID = ARGS.suid
-        suid = ARGS.suid + '.' + str(dataset.InstanceNumber)
-        dataset.SOPInstanceUID = suid
-        # do not use:  dataset.MediaStorageSOPInstanceUID =  dataset.SOPInstanceUID
-        dataset.file_meta.data_element("MediaStorageSOPInstanceUID").value = suid
-        
-        dataset.FrameOfReferenceUID = ARGS.foruid
-
-        dataset.SeriesNumber = ARGS.sn
+        if ARGS.sn>0: dataset.SeriesNumber = ARGS.sn
 
         # Anonymize dataset tags
         anonymize_tags_if_anon(dataset, False, ARGS.delete_private_tags)
@@ -784,7 +791,7 @@ def iterate_once(in_args, input_dir, output_dir):
             series_desc_prefix = ''
 
     except Exception:
-        print("Could not convert the x, y,z offsets")
+        print("Could not convert the x, y, z offsets")
         sys.exit()
 
     if os.path.isdir(input_dir):
