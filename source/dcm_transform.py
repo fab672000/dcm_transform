@@ -218,17 +218,20 @@ def set_str_vec(sarray, val, dim):
         sarray[i] = str(val[i])
 
 #------------------------------------------------------------------------------
-def generate_new_uids(dataset, suid):
+def generate_sop_instance_uid_from_series_uid(series_uid, instance_number):
+    return series_uid + '.' + str(instance_number)
+
+#------------------------------------------------------------------------------
+def generate_new_uids(dataset, suid, foruid, sopiuid):
     """Generate new series, FOR, SOP Instance uids"""
     #Generate new UIDs automatically when any transform changes the geometry
     dataset.SeriesInstanceUID = suid
-    sopiuid = suid + '.' + str(dataset.InstanceNumber)
     dataset.SOPInstanceUID = sopiuid
     dataset.file_meta.data_element("MediaStorageSOPInstanceUID").value = sopiuid
     # do not use: dataset.MediaStorageSOPInstanceUID = dataset.SOPInstanceUID!
 
     # Generate a new FORUID too
-    dataset.FrameOfReferenceUID = ARGS.foruid
+    dataset.FrameOfReferenceUID = foruid
 
 #------------------------------------------------------------------------------
 def compute_3d_transforms(dataset):
@@ -238,7 +241,7 @@ def compute_3d_transforms(dataset):
         return
 
     #Generate new UIDs automatically when any transform changes the geometry
-    generate_new_uids(dataset, ARGS.suid)
+    generate_new_uids(dataset, ARGS.suid, ARGS.foruid, generate_sop_instance_uid_from_series_uid(series_uid, dataset.InstanceNumber))
 
     pos = [dataset.ImagePositionPatient[0].real, \
            dataset.ImagePositionPatient[1].real, dataset.ImagePositionPatient[2].real, 1.]

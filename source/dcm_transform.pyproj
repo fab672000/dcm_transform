@@ -6,7 +6,7 @@
     <ProjectGuid>59dfd21d-be10-46b6-9290-4e62deb53849</ProjectGuid>
     <ProjectHome>
     </ProjectHome>
-    <StartupFile>dcm_transform.py</StartupFile>
+    <StartupFile>test_dataset_transforms.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
@@ -14,9 +14,11 @@
     <Name>dcm_transform</Name>
     <RootNamespace>pyTransform</RootNamespace>
     <LaunchProvider>Standard Python launcher</LaunchProvider>
-    <CommandLineArguments>examples\roi\single.dcm result.dcm -an demo -x 10 -dpt -tags ImplementationVersionName demo</CommandLineArguments>
+    <CommandLineArguments>
+    </CommandLineArguments>
     <EnableNativeCodeDebugging>False</EnableNativeCodeDebugging>
     <PublishUrl>D:\DevTools\Python27\Scripts</PublishUrl>
+    <DebugStdLib>False</DebugStdLib>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <DebugSymbols>true</DebugSymbols>
