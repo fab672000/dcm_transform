@@ -1,0 +1,5 @@
+The MR dicom data contained in this directory has been sampled from  from the gdcm toolkit example data, 
+gdcm is licensed under the BSD license.
+
+For more information, please consult:
+	http://gdcm.sourceforge.net/wiki/index.php/General_questions
