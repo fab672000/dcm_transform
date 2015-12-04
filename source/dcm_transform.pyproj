@@ -16,6 +16,7 @@
     <LaunchProvider>Standard Python launcher</LaunchProvider>
     <CommandLineArguments>examples\roi\single.dcm result.dcm -an demo -x 10 -dpt -tags ImplementationVersionName demo</CommandLineArguments>
     <EnableNativeCodeDebugging>False</EnableNativeCodeDebugging>
+    <PublishUrl>D:\DevTools\Python27\Scripts</PublishUrl>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <DebugSymbols>true</DebugSymbols>
@@ -27,9 +28,18 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="dcm_transform.py" />
+    <Compile Include="test_dataset_transforms.py">
+      <SubType>Code</SubType>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="examples\roi\generate rois.cmd" />
+    <Content Include="examples\roi\single.dcm" />
     <Content Include="generate variations.cmd" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="examples\" />
+    <Folder Include="examples\roi\" />
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
