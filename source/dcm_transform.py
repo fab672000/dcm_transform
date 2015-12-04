@@ -66,7 +66,7 @@ except ImportError:
 #------------------------------------------------------------------------------
 def parse_arguments():
     """Parse all command line arguments"""
-    version = '1.1.7'
+    version = '1.1.8'
 
     timestamp = str(int(time.time()))
     series_uid = '1.2.3.4.' + timestamp + '.0.0.0'
@@ -83,7 +83,7 @@ def parse_arguments():
 
     parser.add_argument('-r', '--recurse', action='store_true', \
                         help='traverse input dir tree and reproduce same subtree in output dir')
-    
+
     parser.add_argument('-dpt', '--delete_private_tags', action='store_true', \
                         help='Delete private tags. Can be useful when anononymizing.')
 
@@ -146,24 +146,29 @@ def parse_arguments():
                         metavar=('ROW_COL_VAL_1', 'ROW_COL_VAL_2'))
 
     parser.add_argument('-roi', nargs='+', type=str, default='', \
-                        help='Set a squared ROI of width LEN starting at top-left position x, y of pixel value val.', \
-                        metavar=('X, Y, LEN, VAL', 'X, Y, LEN, VAL'))
+                        help='Set a squared ROI of width LEN starting at top-left position x, y ' + \
+                            'of pixel value val.', \
+                        metavar=('X, Y, LEN, VAL', '...'))
 
     parser.add_argument('-crosshair', nargs='+', type=str, default='', \
-                        help='Set a crosshair at top-left pos x, y of size S and line width W(odd number) with an intensity I and alpha blending A.', \
-                        metavar=('X, Y, S, W, I, A', 'X, Y, S, W, I, A'))
+                        help='Set a crosshair at top-left pos x, y of size S and line width W(odd number)' + \
+                            ' with an intensity I and alpha blending A.', \
+                        metavar=('X, Y, S, W, I, A', '...'))
 
     parser.add_argument('-elp', nargs='+', type=str, default='', \
-                        help='Set an ellipse at top-left pos x, y of width radius w and radius height with intensity I and alpha blending A and cos/sin steps S(i.e. 120) .', \
-                        metavar=('X, Y, W, H, I, A, S', 'X, Y, W, H, S, I, A'))
+                        help='Set an ellipse at top-left pos x, y of width radius w and radius h' + \
+                            ' with intensity I and alpha blending A and cos/sin steps S(i.e. 120) .', \
+                        metavar=('X, Y, W, H, I, A, S', '...'))
 
     parser.add_argument('-rect', nargs='+', type=str, default='', \
-                        help='Set a rectangle at top-left pos x, y of width w and height h and step S with intensity I and alpha blending A.', \
-                        metavar=('X, Y, W, H, S, I, A', 'X, Y, W, H, S, I, A'))
+                        help='Set a rectangle at top-left pos x, y of width w and height h and step S ' + \
+                            'with intensity I and alpha blending A.', \
+                        metavar=('X, Y, W, H, S, I, A', '...'))
 
     parser.add_argument('-frect', nargs='+', type=str, default='', \
-                        help='Set a filled rectangle at top-left pos x, y of width w and height h, S with intensity I and alpha blending A.', \
-                        metavar=('X, Y, W, H, I, A', 'X, Y, W, H, I, A'))
+                        help='Set a filled rectangle at top-left pos x, y of width w and height h, S ' + \
+                            'with intensity I and alpha blending A.', \
+                        metavar=('X, Y, W, H, I, A', '...'))
 
     #parser.print_help()
 
@@ -225,7 +230,8 @@ def generate_new_uids(dataset, suid):
     dataset.SeriesInstanceUID = suid
     sopiuid = suid + '.' + str(dataset.InstanceNumber)
     dataset.SOPInstanceUID = sopiuid
-    dataset.file_meta.data_element("MediaStorageSOPInstanceUID").value = sopiuid # do not use:  dataset.MediaStorageSOPInstanceUID =  dataset.SOPInstanceUID
+    dataset.file_meta.data_element("MediaStorageSOPInstanceUID").value = sopiuid
+    # do not use: dataset.MediaStorageSOPInstanceUID = dataset.SOPInstanceUID!
 
     # Generate a new FORUID too
     dataset.FrameOfReferenceUID = ARGS.foruid
@@ -234,8 +240,8 @@ def generate_new_uids(dataset, suid):
 def compute_3d_transforms(dataset):
     """Compute all 3d transforms (translation/rotation) and update"""
 
-    if not is_tranformation3D(ARGS): 
-        return 
+    if not is_3d_tranformation(ARGS):
+        return
 
     #Generate new UIDs automatically when any transform changes the geometry
     generate_new_uids(dataset, ARGS.suid)
@@ -326,17 +332,17 @@ def get_dicom_time_from(dtime):
 
 #------------------------------------------------------------------------------
 # Define call-back functions for the dataset.walk() function
-def PN_callback(ds, data_element):
+def PN_callback(dataset, data_element):
     """Called from the dataset "walk" recursive function for all data elements."""
     if ARGS.an != '':
         if data_element.VR == "PN":
             data_element.value = ARGS.an
         #print (data_element.value)
 #------------------------------------------------------------------------------
-def curves_callback(ds, data_element):
+def curves_callback(dataset, data_element):
     """Called from the dataset "walk" recursive function for all data elements."""
     if data_element.tag.group & 0xFF00 == 0x5000:
-        del ds[data_element.tag]
+        del dataset[data_element.tag]
 
 #------------------------------------------------------------------------------
 def assign_custom_tags(dataset, args):
@@ -352,7 +358,8 @@ def assign_custom_tags(dataset, args):
             print("Setting tag " + args[i] + " to " + args[i + 1] + ' ... ')
             try:
                 data_element = dataset.data_element(args[i])
-            except KeyError as exc: #OK, maybe user wants a tag that is in file_meta metadata structure give it a second chance:
+            except KeyError as exc: #OK, maybe user wants a tag that is in file_meta metadata structure 
+                                    #so give it a second chance:
                 data_element = dataset.file_meta.data_element(args[i])
 
             if data_element == None:
@@ -365,59 +372,59 @@ def assign_custom_tags(dataset, args):
                             '>, value will not be set ...')
 
         if tags_len % 2 != 0:
-            print("  Warning: list of pair of <tags value> expected, "+ \
+            print("  Warning: list of pair of <tags value> expected, " + \
                     "but odd count was found instead, " + \
                     "found ending: <" + args[tags_len - 1] + '>')
     except Exception as exc:
         print(exc)
 #------------------------------------------------------------------------------
-def draw_pixel(buffer, x, w, xstep, y, h, ystep, val, alpha=1.0):
+def draw_pixel(pixel_buffer, pos_x, width, xstep, pos_y, height, ystep, val, alpha=1.0):
     """Set a pixel buffer value val at x, y to x+w, y+h with an xstep and ystep increments """
-    for col in range(int(x), int(x+w), xstep):
-        for row in range(int(y), int(y+h), ystep):
+    for col in range(int(pos_x), int(pos_x + width), xstep):
+        for row in range(int(pos_y), int(pos_y + height), ystep):
 #            print(col, row)
-            orig = buffer[row, col]*(1-alpha)
-            new = val* alpha
+            orig = pixel_buffer[row, col] * (1 - alpha)
+            new = val * alpha
             blend = orig + new
-            buffer[row, col]=blend
+            pixel_buffer[row, col] = blend
 #------------------------------------------------------------------------------
-def draw_hline(buffer, x, y, w, step, val, alpha=1.0):
+def draw_hline(pixel_buffer, pos_x, pos_y, width, step, val, alpha=1.0):
     """Draw an horizontal line starting at x, y of width w with step step and value val """
-    draw_pixel(buffer, x, w, step, y, 1, 1, val, alpha)
+    draw_pixel(pixel_buffer, pos_x, width, step, pos_y, 1, 1, val, alpha)
 #------------------------------------------------------------------------------
-def draw_vline(buffer, x, y, h, step, val, alpha=1.0):
+def draw_vline(pixel_buffer, pos_x, pos_y, height, step, val, alpha=1.0):
     """Set a pixel buffer value val at x, y to x+w, y+h with an xstep and ystep increments """
-    draw_pixel(buffer, x, 1, 1, y, h, step, val, alpha)
+    draw_pixel(pixel_buffer, pos_x, 1, 1, pos_y, height, step, val, alpha)
 #------------------------------------------------------------------------------
-def draw_elp(buffer, x, y, w, h, val, alpha=1.0, step=1):
+def draw_elp(pixel_buffer, pos_x, pos_y, width, height, val, alpha=1.0, step=1):
     """ Draws an ellipse"""
-    s = step
-    for theta in range(0, 360, s):
-        x1 = x + w/2.0*math.cos(theta/180.0*math.pi)
-        y1 = y - h/2.0*math.sin(theta/180.0*math.pi)
-        draw_pixel(buffer, int(x1), 1, 1, int(y1), 1, 1, val, alpha)
+    for theta in range(0, 360, step):
+        point_x1 = pos_x + width / 2.0 * math.cos(theta / 180.0 * math.pi)
+        point_y1 = pos_y - height / 2.0 * math.sin(theta / 180.0 * math.pi)
+        draw_pixel(pixel_buffer, int(point_x1), 1, 1, int(point_y1), 1, 1, val, alpha)
 #------------------------------------------------------------------------------
-def draw_rect(buffer, x, y, w, h, step, val, alpha=1.0):
+def draw_rect(pixel_buffer, pos_x, pos_y, width, height, step, val, alpha=1.0):
     """Draws a rect in the buffer at x, y to x+w, y+h with an xstep and ystep increments """
-    draw_hline(buffer, x,     y,     w, step, val, alpha)
-    draw_hline(buffer, x,     y+h-1, w, step, val, alpha)
-    draw_vline(buffer, x,     y,     h, step, val, alpha)
-    draw_vline(buffer, x+w-1, y,     h, step, val, alpha)
+    draw_hline(pixel_buffer, pos_x, pos_y, width, step, val, alpha)
+    draw_hline(pixel_buffer, pos_x, pos_y + height - 1, width, step, val, alpha)
+    draw_vline(pixel_buffer, pos_x, pos_y, height, step, val, alpha)
+    draw_vline(pixel_buffer, pos_x + width - 1, pos_y, height, step, val, alpha)
 #------------------------------------------------------------------------------
-def draw_frect(buffer, x, y, w, h, val, alpha=1.0):
+def draw_frect(pixel_buffer, pos_x, pos_y, width, height, val, alpha=1.0):
     """Draws a rect in the buffer at x, y to x+w, y+h with an [0, ] transparency factor """
-    for i in range(int(y), int(y+h)):
-        draw_hline(buffer, x,     i,     w, 1, val, alpha)
+    for i in range(int(pos_y), int(pos_y + height)):
+        draw_hline(pixel_buffer, pos_x, i, width, 1, val, alpha)
 #------------------------------------------------------------------------------
-def draw_xhair(buffer, x, y, s, w, val, alpha=1.0):
-    """Draws a cross hair  in the buffer at x, y with size s and pen width w with intensity val and alpha blending alpha"""
-    cw = int(w/2*2)+1
-    w2=(cw-1)/2
-    line_len = int(s)
-    draw_frect(buffer, x-line_len, y-w2, line_len-w2, cw, val, alpha)
-    draw_frect(buffer, x+w2+1,     y-w2, line_len-w2, cw, val, alpha)
-    draw_frect(buffer, x-w2,       y-line_len,  cw, line_len-w2, val, alpha)
-    draw_frect(buffer, x-w2,       y+1+w2, cw, line_len-w2, val, alpha)
+def draw_xhair(pixel_buffer, pos_x, pos_y, pen_size, width, val, alpha=1.0):
+    """ Draws a cross hair  in the buffer at x, y with size s and pen width w 
+        with intensity val and alpha blending alpha"""
+    rounded_width = int(width / 2 * 2) + 1
+    half_width = (rounded_width - 1) / 2
+    line_len = int(pen_size)
+    draw_frect(pixel_buffer, pos_x - line_len, pos_y - half_width, line_len - half_width, rounded_width, val, alpha)
+    draw_frect(pixel_buffer, pos_x + half_width + 1, pos_y - half_width, line_len - half_width, rounded_width, val, alpha)
+    draw_frect(pixel_buffer, pos_x - half_width, pos_y - line_len, rounded_width, line_len - half_width, val, alpha)
+    draw_frect(pixel_buffer, pos_x - half_width, pos_y + 1 + half_width, rounded_width, line_len - half_width, val, alpha)
 #------------------------------------------------------------------------------
 def set_image_pixels(dataset, args):
     """ Given a dataset and the args key, val pair array  arguments set custom tags"""
@@ -425,21 +432,21 @@ def set_image_pixels(dataset, args):
     if args == '':
         return
     try:
-        buffer = dataset.pixel_array
+        pixel_buffer = dataset.pixel_array
         pix_len = len(args)
         n_vals = 4
         #if pix_len > 1:
         #    print()
         for i in xrange(0, pix_len / n_vals * n_vals, n_vals):
-            x = int(args[i + 0])
-            y = int(args[i + 1])
+            pos_x = int(args[i + 0])
+            pos_y = int(args[i + 1])
             val = int(args[i + 2])
-            a = float(args[i + 3])
-            if len(buffer)==0:
+            alpha = float(args[i + 3])
+            if len(pixel_buffer) == 0:
                 print("  Could not find a pixel array, value won't be set ...")
             else:
                 try:
-                    draw_pixel(buffer, x, 1, 1, y, 1, 1, val, a)
+                    draw_pixel(pixel_buffer, pos_x, 1, 1, pos_y, 1, 1, val, alpha)
                 except Exception as exc:
                     print('  Could not set that pixel value  <' + args[i + 2] + \
                             '>, value will not be set ...')
@@ -447,8 +454,8 @@ def set_image_pixels(dataset, args):
         if pix_len % n_vals != 0:
             print("  Warning: list of quadruplets expected, but odd count was found instead, " + \
                 "found ending: <" + args[pix_len - 1] + '>')
- 
-        dataset.PixelData = buffer.tostring()
+
+        dataset.PixelData = pixel_buffer.tostring()
     except Exception as exc:
         print(exc)
 #------------------------------------------------------------------------------
@@ -458,32 +465,32 @@ def draw_crosshair(dataset, args):
     if args == '':
         return
     try:
-        buffer = dataset.pixel_array
+        pixel_buffer = dataset.pixel_array
         n_vals = 6
         pix_len = len(args)
         #if pix_len > 1:
         #    print()
         for i in xrange(0, pix_len / n_vals * n_vals, n_vals):
-            x = float(args[i + 0]) # x pos
-            y = float(args[i + 1]) # y pos
-            s = int(args[i + 2]) # crosshair size (line length)
-            w = int(args[i + 3]) # pen width (number of pixels)
-            v = int(args[i + 4]) # intensity (for dash lines purpose)
-            a = float(args[i + 5]) # alpha blending (for dash lines purpose)
+            pos_x = float(args[i + 0]) # x pos
+            pos_y = float(args[i + 1]) # y pos
+            crosshair_size = int(args[i + 2]) # crosshair size (line length)
+            pen_width = int(args[i + 3]) # pen width (number of pixels)
+            intensity = int(args[i + 4]) # intensity (for dash lines purpose)
+            alpha = float(args[i + 5]) # alpha blending (for dash lines purpose)
 
-            if len(buffer)==0:
+            if len(pixel_buffer) == 0:
                 print("  Could not find a pixel array, value won't be set ...")
             else:
                 try:
-                    draw_xhair(buffer, x, y, s, w, v, a)
+                    draw_xhair(pixel_buffer, pos_x, pos_y, crosshair_size, pen_width, intensity, alpha)
                 except Exception as exc:
                     print('  Error while trying to draw the crosshair, pixel values wont  be set ...')
                     print(exc)
         if pix_len % n_vals != 0:
             print("  Warning: list of 6 parameters sequences, but odd count was found instead, " + \
                 "found ending: <" + args[pix_len - 1] + '>')
- 
-        dataset.PixelData = buffer.tostring()
+
+        dataset.PixelData = pixel_buffer.tostring()
     except Exception as exc:
         print(exc)
 #------------------------------------------------------------------------------
@@ -493,21 +500,21 @@ def draw_roi(dataset, args):
     if args == '':
         return
     try:
-        buffer = dataset.pixel_array
+        pixel_buffer = dataset.pixel_array
         n_vals = 4
         pix_len = len(args)
         #if pix_len > 1:
         #    print()
         for i in xrange(0, pix_len / n_vals * n_vals, n_vals):
-            x = float(args[i + 0])
-            y = float(args[i + 1])
-            size = float(args[i + 2])
+            pos_x = float(args[i + 0])
+            pos_y = float(args[i + 1])
+            stepping = float(args[i + 2])
             val = int(args[i + 3])
-            if len(buffer)==0:
+            if len(pixel_buffer) == 0:
                 print("  Could not find a pixel array, value won't be set ...")
             else:
                 try:
-                    draw_rect(buffer, x, y, size, size, 1, val)
+                    draw_rect(pixel_buffer, pos_x, pos_y, stepping, stepping, 1, val)
                 except Exception as exc:
                     print('  Could not set that pixel value  <' + args[i + 2] + \
                             '>, value will not be set ...')
@@ -515,8 +522,8 @@ def draw_roi(dataset, args):
         if pix_len % n_vals != 0:
             print("  Warning: list of triplets expected, but odd count was found instead, " + \
                 "found ending: <" + args[pix_len - 1] + '>')
- 
-        dataset.PixelData = buffer.tostring()
+
+        dataset.PixelData = pixel_buffer.tostring()
     except Exception as exc:
         print(exc)
 #------------------------------------------------------------------------------
@@ -526,33 +533,33 @@ def draw_ellipse(dataset, args):
     if args == '':
         return
     try:
-        buffer = dataset.pixel_array
+        pixel_buffer = dataset.pixel_array
         n_vals = 7
         pix_len = len(args)
         #if pix_len > 1:
         #    print()
         for i in xrange(0, pix_len / n_vals * n_vals, n_vals):
-            x = float(args[i + 0]) # x pos
-            y = float(args[i + 1]) # y pos
-            w = int(args[i + 2]) # rect rad width
-            h = int(args[i + 3]) # rect rad height
-            v = int(args[i + 4]) # pixel intensity
-            a = float(args[i + 5]) # pixel alpha transparency
-            s = int(args[i + 6]) # stepping 
+            pos_x = float(args[i + 0]) # x pos
+            pos_y = float(args[i + 1]) # y pos
+            width = int(args[i + 2]) # rect rad width
+            height = int(args[i + 3]) # rect rad height
+            pixel_intensity = int(args[i + 4]) # pixel intensity
+            alpha = float(args[i + 5]) # pixel alpha transparency
+            stepping = int(args[i + 6]) # stepping
 
-            if len(buffer)==0:
+            if len(pixel_buffer) == 0:
                 print("  Could not find a pixel array, value won't be set ...")
             else:
                 try:
-                    draw_elp(buffer, x, y, w, h, v, a, s)
+                    draw_elp(pixel_buffer, pos_x, pos_y, width, height, pixel_intensity, alpha, stepping)
                 except Exception as exc:
                     print('  Error while trying to draw the rect, pixel values wont  be set ...')
                     print(exc)
         if pix_len % n_vals != 0:
             print("  Warning: list of triplets expected, but odd count was found instead, " + \
                 "found ending: <" + args[pix_len - 1] + '>')
- 
-        dataset.PixelData = buffer.tostring()
+
+        dataset.PixelData = pixel_buffer.tostring()
     except Exception as exc:
         print(exc)
 #------------------------------------------------------------------------------
@@ -562,33 +569,33 @@ def draw_rectangle(dataset, args):
     if args == '':
         return
     try:
-        buffer = dataset.pixel_array
+        pixel_buffer = dataset.pixel_array
         n_vals = 7
         pix_len = len(args)
         #if pix_len > 1:
         #    print()
         for i in xrange(0, pix_len / n_vals * n_vals, n_vals):
-            x = float(args[i + 0]) # x pos
-            y = float(args[i + 1]) # y pos
-            w = float(args[i + 2]) # rect width
-            h = float(args[i + 3]) # rect height
-            s = int(args[i + 4]) # stepping (for dash lines purpose)
-            v = int(args[i + 5]) # pixel intensity
-            a = float(args[i + 6]) # pixel alpha transparency
+            pos_x = float(args[i + 0]) # x pos
+            pos_y = float(args[i + 1]) # y pos
+            width = float(args[i + 2]) # rect width
+            height = float(args[i + 3]) # rect height
+            stepping = int(args[i + 4]) # stepping (for dash lines purpose)
+            pixel_intensity = int(args[i + 5]) # pixel intensity
+            alpha = float(args[i + 6]) # pixel alpha transparency
 
-            if len(buffer)==0:
+            if len(pixel_buffer) == 0:
                 print("  Could not find a pixel array, value won't be set ...")
             else:
                 try:
-                    draw_rect(buffer, x, y, w, h, s, v, a)
+                    draw_rect(pixel_buffer, pos_x, pos_y, width, height, stepping, pixel_intensity, alpha)
                 except Exception as exc:
                     print('  Error while trying to draw the rect, pixel values wont  be set ...')
                     print(exc)
         if pix_len % n_vals != 0:
             print("  Warning: list of triplets expected, but odd count was found instead, " + \
                 "found ending: <" + args[pix_len - 1] + '>')
- 
-        dataset.PixelData = buffer.tostring()
+
+        dataset.PixelData = pixel_buffer.tostring()
     except Exception as exc:
         print(exc)
 #------------------------------------------------------------------------------
@@ -598,37 +605,38 @@ def draw_frectangle(dataset, args):
     if args == '':
         return
     try:
-        buffer = dataset.pixel_array
+        pixel_buffer = dataset.pixel_array
         n_vals = 6
         pix_len = len(args)
         #if pix_len > 1:
         #    print()
         for i in xrange(0, pix_len / n_vals * n_vals, n_vals):
-            x = float(args[i + 0]) # x pos
-            y = float(args[i + 1]) # y pos
-            w = float(args[i + 2]) # rect width
-            h = float(args[i + 3]) # rect height
-            v = int(args[i + 4]) # pixel intensity
-            a = float(args[i + 5]) # pixel alpha transparency
+            pos_x = float(args[i + 0]) # x pos
+            pos_y = float(args[i + 1]) # y pos
+            width = float(args[i + 2]) # rect width
+            height = float(args[i + 3]) # rect height
+            pixel_intensity = int(args[i + 4]) # pixel intensity
+            alpha = float(args[i + 5]) # pixel alpha transparency
 
-            if len(buffer)==0:
+            if len(pixel_buffer) == 0:
                 print("  Could not find a pixel array, value won't be set ...")
             else:
                 try:
-                    draw_frect(buffer, x, y, w, h, v, a)
+                    draw_frect(pixel_buffer, pos_x, pos_y, width, height, pixel_intensity, alpha)
                 except Exception as exc:
                     print('  Error while trying to draw the rect, pixel values wont  be set ...')
                     print(exc)
         if pix_len % n_vals != 0:
             print("  Warning: list of triplets expected, but odd count was found instead, " + \
                 "found ending: <" + args[pix_len - 1] + '>')
- 
-        dataset.PixelData = buffer.tostring()
+
+        dataset.PixelData = pixel_buffer.tostring()
     except Exception as exc:
         print(exc)
 #------------------------------------------------------------------------------
 def change_tag_if_arg(dataset, tag, arg):
-    if arg != '': 
+    """Change tag if arg is set"""
+    if arg != '':
         try:
             dataset.data_element(tag).value = arg
         except Exception as exc:
@@ -665,23 +673,23 @@ def anonymize_tags_if_anon(dataset, remove_curves=False, remove_private_tags=Fal
     dataset.walk(PN_callback)
 
     if ARGS.an != '':
-        if ARGS.pid != '': 
+        if ARGS.pid != '':
             dataset.PatientID = ARGS.pid
         else:
             dataset.PatientID = 'id'
 
-        change_tag_if_arg(dataset, "InstitutionName", ARGS.an)  # optionally change institution
-        change_tag_if_arg(dataset, "InstitutionAddress",  ARGS.an)  # optionally change institution
-        change_tag_if_arg(dataset, "StationName",  ARGS.an)  # optionally change institution
-        change_tag_if_arg(dataset, "SequenceName",  ARGS.an)  # optionally change institution
-        change_tag_if_arg(dataset, "ProtocolName",  ARGS.an)  # optionally change institution
+        change_tag_if_arg(dataset, "InstitutionName", ARGS.an)
+        change_tag_if_arg(dataset, "InstitutionAddress", ARGS.an)
+        change_tag_if_arg(dataset, "StationName", ARGS.an)
+        change_tag_if_arg(dataset, "SequenceName", ARGS.an)
+        change_tag_if_arg(dataset, "ProtocolName", ARGS.an)
         change_tag_if_arg(dataset, "ContentDate", '19010101')
         change_tag_if_arg(dataset, "ContentTime", '000000.000000')
-        change_tag_if_arg(dataset, "PerformedProcedureStepStartDate",  '19010101')  # optionally change institution
-        change_tag_if_arg(dataset, "PerformedProcedureStepStartTime",  '000000.000000')  # optionally change institution
-        change_tag_if_arg(dataset, "PerformedProcedureStepID",  "0")  # optionally change institution
-        change_tag_if_arg(dataset, "PerformedProcedureStepDescription",  ARGS.an)  # optionally change institution
-            
+        change_tag_if_arg(dataset, "PerformedProcedureStepStartDate", '19010101')
+        change_tag_if_arg(dataset, "PerformedProcedureStepStartTime", '000000.000000')
+        change_tag_if_arg(dataset, "PerformedProcedureStepID", "0")
+        change_tag_if_arg(dataset, "PerformedProcedureStepDescription", ARGS.an)
+
         # Remove data elements (should only do so if DICOM type 3 optional)
         # Use general loop so easy to add more later
         # Could also have done: del ds.OtherPatientIDs, etc.
@@ -705,11 +713,12 @@ def anonymize_tags_if_anon(dataset, remove_curves=False, remove_private_tags=Fal
         if remove_curves:
             dataset.walk(curves_callback)
 
-def truncate_str(str, l, ending='..'):
-    le = len(ending)
-    if len(str) > l:
-        str = (str[:(l-le)] + ending)
-    return str
+#------------------------------------------------------------------------------
+def truncate_str(input_str, maxlen, ending='..'):
+    """Truncate teh string if more than maxlen chars """
+    if len(input_str) > maxlen:
+        return input_str[:(maxlen - len(ending))] + ending
+    return input_str
 #------------------------------------------------------------------------------
 def transform(file_count, desc_prefix, input_filename, output_filename):
     """Replace data element values to partly transform a DICOM file.
@@ -721,7 +730,7 @@ def transform(file_count, desc_prefix, input_filename, output_filename):
         file_count += 1
         # Load the current dicom file to 'transform'
         dataset = dicom.read_file(input_filename)
-        
+
         # 3d xforms user cmd options
         compute_3d_transforms(dataset)
 
@@ -732,7 +741,8 @@ def transform(file_count, desc_prefix, input_filename, output_filename):
         draw_frectangle(dataset, ARGS.frect)        # set a filled rectangle in image buffer
         draw_crosshair(dataset, ARGS.crosshair)     # set a crosshair in image buffer
 
-        if ARGS.sn>0: dataset.SeriesNumber = ARGS.sn
+        if ARGS.sn > 0:
+            dataset.SeriesNumber = ARGS.sn
 
         # Anonymize dataset tags
         anonymize_tags_if_anon(dataset, False, ARGS.delete_private_tags)
@@ -740,25 +750,26 @@ def transform(file_count, desc_prefix, input_filename, output_filename):
         # Deal with all sorts of dates and time if user asks for it:
         transform_dates(file_count, dataset)
 
-        change_tag_if_arg(dataset, "StudyDescription", ARGS.sdesc) # optionally change study desc
-        change_tag_if_arg(dataset, "InstitutionName", ARGS.iname)  # optionally change institution
-        change_tag_if_arg(dataset, "InstitutionAddress", ARGS.iaddr)  # optionally change institution
-        change_tag_if_arg(dataset, "ProtocolName", ARGS.proto)  # optionally change institution
-        change_tag_if_arg(dataset, "Manufacturer", ARGS.mname)  # optionally change MM name
-        change_tag_if_arg(dataset, "ManufacturerModelName", ARGS.mmname)  # optionally change MM name
-        change_tag_if_arg(dataset, "PatientID", ARGS.pid)  # optionally change MM name
-        change_tag_if_arg(dataset, "PatientName", ARGS.pname)  # optionally change MM name
-        change_tag_if_arg(dataset, "PatientBirthDate", ARGS.dob) #optionally change the patient date of birth
+        #optional changes of useful tags if they have a non default / set value:
+        change_tag_if_arg(dataset, "StudyDescription", ARGS.sdesc)
+        change_tag_if_arg(dataset, "InstitutionName", ARGS.iname)
+        change_tag_if_arg(dataset, "InstitutionAddress", ARGS.iaddr)
+        change_tag_if_arg(dataset, "ProtocolName", ARGS.proto)
+        change_tag_if_arg(dataset, "Manufacturer", ARGS.mname)
+        change_tag_if_arg(dataset, "ManufacturerModelName", ARGS.mmname)
+        change_tag_if_arg(dataset, "PatientID", ARGS.pid)
+        change_tag_if_arg(dataset, "PatientName", ARGS.pname)
+        change_tag_if_arg(dataset, "PatientBirthDate", ARGS.dob)
 
         # custom DICOM tags settings alternative
         assign_custom_tags(dataset, ARGS.tags)
 
-        # do useful things with the series description 
+        # do useful things with the series description
         if ARGS.desc != '':
             change_tag_if_arg(dataset, "SeriesDescription", ARGS.desc) #optionally change study desc
         else: # automatic tracking of transformations
             try:
-                if desc_prefix!='':
+                if desc_prefix != '':
                     dataset.SeriesDescription = desc_prefix + ' ' + dataset.SeriesDescription
             except Exception as exc:
                 print(exc)
@@ -772,10 +783,10 @@ def transform(file_count, desc_prefix, input_filename, output_filename):
 
     return file_count
 #------------------------------------------------------------------------------
-def is_tranformation3D(in_args):
+def is_3d_tranformation(in_args):
     """Determine if any 3d transform on image position patient needs to be computed"""
-    if in_args.x!=0.0 or in_args.y!=0.0 or in_args.z!=0.0 or \
-        in_args.ax!=0.0 or in_args.ay!=0.0 or in_args.az!=0.0 :
+    if in_args.x != 0.0 or in_args.y != 0.0 or in_args.z != 0.0 or \
+        in_args.ax != 0.0 or in_args.ay != 0.0 or in_args.az != 0.0:
         return True
     return False
 #------------------------------------------------------------------------------
@@ -784,7 +795,7 @@ def iterate_once(in_args, input_dir, output_dir):
     series_file_count = 0
 
     try:
-        if is_tranformation3D(in_args):
+        if is_3d_tranformation(in_args):
             series_desc_prefix = 'T[' + fmt_float3d('', in_args.x, in_args.y, in_args.z, ' ') \
                 + fmt_float3d('A', in_args.ax, in_args.ay, in_args.az, ' ') + ']'
         else:
