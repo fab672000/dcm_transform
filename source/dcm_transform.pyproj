@@ -33,12 +33,14 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="examples\data\brain1.dcm" />
+    <Content Include="examples\data\license.txt" />
     <Content Include="examples\roi\generate rois.cmd" />
-    <Content Include="examples\roi\single.dcm" />
     <Content Include="generate variations.cmd" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="examples\" />
+    <Folder Include="examples\data\" />
     <Folder Include="examples\roi\" />
   </ItemGroup>
   <PropertyGroup>
