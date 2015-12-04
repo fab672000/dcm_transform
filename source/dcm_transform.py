@@ -60,7 +60,7 @@ except ImportError:
 #------------------------------------------------------------------------------
 def parse_arguments(the_args=None):
     """Parse all command line arguments"""
-    version = '1.1.8'
+    version = '1.1.9'
 
     timestamp = str(int(time.time()))
     defaulf_series_uid = '1.2.3.4.' + timestamp + '.0.0.0'
@@ -79,7 +79,7 @@ def parse_arguments(the_args=None):
                         help='traverse input dir tree and reproduce same subtree in output dir')
 
     parser.add_argument('-dpt', '--delete_private_tags', action='store_true', \
-                        help='Delete private tags. Can be useful when anononymizing.')
+                        help='Delete private tags. Can be useful when anonymizing.')
 
 
     parser.add_argument('-x', nargs='?', type=float, default=0.0, help='X transform offset in mm')
@@ -329,7 +329,7 @@ def get_dicom_time_from(dtime):
 
 #------------------------------------------------------------------------------
 # Define call-back functions for the dataset.walk() function
-def PN_callback(dataset, data_element):
+def pn_callback(dataset, data_element):
     """Called from the dataset "walk" recursive function for all data elements."""
     if data_element.VR == "PN":
         data_element.value = ARGS.an
@@ -667,7 +667,7 @@ def anonymize_tags_if_anon(dataset, args, remove_curves=False, remove_private_ta
     # Remove patient name and any other person names
 
     if args.an != '':
-        dataset.walk(PN_callback)
+        dataset.walk(pn_callback)
 
     if args.an != '':
         if args.pid != '':
