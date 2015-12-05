@@ -58,6 +58,69 @@ except ImportError:
     import pydicom as dicom
 
 #------------------------------------------------------------------------------
+class PixelEditor():
+    """ Pixel editing utility class for drawing simple geometries inside the 2D pixel array"""
+    pixel_buffer = None
+
+    #------------------------------------------------------------------------------
+    def __init__(self, the_buf): 
+        self.pixel_buffer = the_buf
+    #------------------------------------------------------------------------------
+    def buffer_length(self): 
+        return len(self.pixel_buffer)
+    #------------------------------------------------------------------------------
+    def buffer_to_string(self): 
+        return self.pixel_buffer.tostring()
+    #------------------------------------------------------------------------------
+    def draw_pixel(self, pos_x, width, xstep, pos_y, height, ystep, val, alpha=1.0):
+        """Set a pixel buffer value val at x, y to x+w, y+h with an xstep and ystep increments """
+        for col in range(int(pos_x), int(pos_x + width), xstep):
+            for row in range(int(pos_y), int(pos_y + height), ystep):
+    #            print(col, row)
+                orig = self.pixel_buffer[row, col] * (1 - alpha)
+                new = val * alpha
+                blend = orig + new
+                self.pixel_buffer[row, col] = blend
+    #------------------------------------------------------------------------------
+    def draw_hline(self, pos_x, pos_y, width, step, val, alpha=1.0):
+        """Draw an horizontal line starting at x, y of width w with step step and value val """
+        self.draw_pixel(pos_x, width, step, pos_y, 1, 1, val, alpha)
+    #------------------------------------------------------------------------------
+    def draw_vline(self, pos_x, pos_y, height, step, val, alpha=1.0):
+        """Set a pixel buffer value val at x, y to x+w, y+h with an xstep and ystep increments """
+        self.draw_pixel(pos_x, 1, 1, pos_y, height, step, val, alpha)
+    #------------------------------------------------------------------------------
+    def draw_elp(self, pos_x, pos_y, width, height, val, alpha=1.0, step=1):
+        """ Draws an ellipse"""
+        for theta in range(0, 360, step):
+            point_x1 = pos_x + width / 2.0 * math.cos(theta / 180.0 * math.pi)
+            point_y1 = pos_y - height / 2.0 * math.sin(theta / 180.0 * math.pi)
+            self.draw_pixel(int(point_x1), 1, 1, int(point_y1), 1, 1, val, alpha)
+    #------------------------------------------------------------------------------
+    def draw_rect(self, pos_x, pos_y, width, height, step, val, alpha=1.0):
+        """Draws a rect in the buffer at x, y to x+w, y+h with an xstep and ystep increments """
+        self.draw_hline(pos_x, pos_y, width, step, val, alpha)
+        self.draw_hline(pos_x, pos_y + height - 1, width, step, val, alpha)
+        self.draw_vline(pos_x, pos_y, height, step, val, alpha)
+        self.draw_vline(pos_x + width - 1, pos_y, height, step, val, alpha)
+    #------------------------------------------------------------------------------
+    def draw_frect(self, pos_x, pos_y, width, height, val, alpha=1.0):
+        """Draws a rect in the buffer at x, y to x+w, y+h with an [0, ] transparency factor """
+        for i in range(int(pos_y), int(pos_y + height)):
+            self.draw_hline( pos_x, i, width, 1, val, alpha)
+    #------------------------------------------------------------------------------
+    def draw_xhair(self, pos_x, pos_y, pen_size, width, val, alpha=1.0):
+        """ Draws a cross hair  in the buffer at x, y with size s and pen width w
+            with intensity val and alpha blending alpha"""
+        rounded_width = int(width / 2 * 2) + 1
+        half_width = (rounded_width - 1) / 2
+        line_len = int(pen_size)
+        self.draw_frect(pos_x - line_len, pos_y - half_width, line_len - half_width, rounded_width, val, alpha)
+        self.draw_frect(pos_x + half_width + 1, pos_y - half_width, line_len - half_width, rounded_width, val, alpha)
+        self.draw_frect(pos_x - half_width, pos_y - line_len, rounded_width, line_len - half_width, val, alpha)
+        self.draw_frect(pos_x - half_width, pos_y + 1 + half_width, rounded_width, line_len - half_width, val, alpha)
+
+#------------------------------------------------------------------------------
 def parse_arguments(the_args=None):
     """Parse all command line arguments"""
     version = '1.1.9'
@@ -374,61 +437,13 @@ def assign_custom_tags(dataset, args):
     except Exception as exc:
         print(exc)
 #------------------------------------------------------------------------------
-def draw_pixel(pixel_buffer, pos_x, width, xstep, pos_y, height, ystep, val, alpha=1.0):
-    """Set a pixel buffer value val at x, y to x+w, y+h with an xstep and ystep increments """
-    for col in range(int(pos_x), int(pos_x + width), xstep):
-        for row in range(int(pos_y), int(pos_y + height), ystep):
-#            print(col, row)
-            orig = pixel_buffer[row, col] * (1 - alpha)
-            new = val * alpha
-            blend = orig + new
-            pixel_buffer[row, col] = blend
-#------------------------------------------------------------------------------
-def draw_hline(pixel_buffer, pos_x, pos_y, width, step, val, alpha=1.0):
-    """Draw an horizontal line starting at x, y of width w with step step and value val """
-    draw_pixel(pixel_buffer, pos_x, width, step, pos_y, 1, 1, val, alpha)
-#------------------------------------------------------------------------------
-def draw_vline(pixel_buffer, pos_x, pos_y, height, step, val, alpha=1.0):
-    """Set a pixel buffer value val at x, y to x+w, y+h with an xstep and ystep increments """
-    draw_pixel(pixel_buffer, pos_x, 1, 1, pos_y, height, step, val, alpha)
-#------------------------------------------------------------------------------
-def draw_elp(pixel_buffer, pos_x, pos_y, width, height, val, alpha=1.0, step=1):
-    """ Draws an ellipse"""
-    for theta in range(0, 360, step):
-        point_x1 = pos_x + width / 2.0 * math.cos(theta / 180.0 * math.pi)
-        point_y1 = pos_y - height / 2.0 * math.sin(theta / 180.0 * math.pi)
-        draw_pixel(pixel_buffer, int(point_x1), 1, 1, int(point_y1), 1, 1, val, alpha)
-#------------------------------------------------------------------------------
-def draw_rect(pixel_buffer, pos_x, pos_y, width, height, step, val, alpha=1.0):
-    """Draws a rect in the buffer at x, y to x+w, y+h with an xstep and ystep increments """
-    draw_hline(pixel_buffer, pos_x, pos_y, width, step, val, alpha)
-    draw_hline(pixel_buffer, pos_x, pos_y + height - 1, width, step, val, alpha)
-    draw_vline(pixel_buffer, pos_x, pos_y, height, step, val, alpha)
-    draw_vline(pixel_buffer, pos_x + width - 1, pos_y, height, step, val, alpha)
-#------------------------------------------------------------------------------
-def draw_frect(pixel_buffer, pos_x, pos_y, width, height, val, alpha=1.0):
-    """Draws a rect in the buffer at x, y to x+w, y+h with an [0, ] transparency factor """
-    for i in range(int(pos_y), int(pos_y + height)):
-        draw_hline(pixel_buffer, pos_x, i, width, 1, val, alpha)
-#------------------------------------------------------------------------------
-def draw_xhair(pixel_buffer, pos_x, pos_y, pen_size, width, val, alpha=1.0):
-    """ Draws a cross hair  in the buffer at x, y with size s and pen width w
-        with intensity val and alpha blending alpha"""
-    rounded_width = int(width / 2 * 2) + 1
-    half_width = (rounded_width - 1) / 2
-    line_len = int(pen_size)
-    draw_frect(pixel_buffer, pos_x - line_len, pos_y - half_width, line_len - half_width, rounded_width, val, alpha)
-    draw_frect(pixel_buffer, pos_x + half_width + 1, pos_y - half_width, line_len - half_width, rounded_width, val, alpha)
-    draw_frect(pixel_buffer, pos_x - half_width, pos_y - line_len, rounded_width, line_len - half_width, val, alpha)
-    draw_frect(pixel_buffer, pos_x - half_width, pos_y + 1 + half_width, rounded_width, line_len - half_width, val, alpha)
-#------------------------------------------------------------------------------
 def set_image_pixels(dataset, args):
     """ Given a dataset and the args key, val pair array  arguments set custom tags"""
     # assign custom tags
     if args == '':
         return
     try:
-        pixel_buffer = dataset.pixel_array
+        pixel_editor = PixelEditor(dataset.pixel_array)
         pix_len = len(args)
         n_vals = 4
         #if pix_len > 1:
@@ -438,11 +453,11 @@ def set_image_pixels(dataset, args):
             pos_y = int(args[i + 1])
             val = int(args[i + 2])
             alpha = float(args[i + 3])
-            if len(pixel_buffer) == 0:
+            if pixel_editor.buffer_length() == 0:
                 print("  Could not find a pixel array, value won't be set ...")
             else:
                 try:
-                    draw_pixel(pixel_buffer, pos_x, 1, 1, pos_y, 1, 1, val, alpha)
+                    pixel_editor.draw_pixel( pos_x, 1, 1, pos_y, 1, 1, val, alpha)
                 except Exception as exc:
                     print('  Could not set that pixel value  <' + args[i + 2] + \
                             '>, value will not be set ...')
@@ -451,7 +466,7 @@ def set_image_pixels(dataset, args):
             print("  Warning: list of quadruplets expected, but odd count was found instead, " + \
                 "found ending: <" + args[pix_len - 1] + '>')
 
-        dataset.PixelData = pixel_buffer.tostring()
+        dataset.PixelData = pixel_editor.buffer_to_string()
     except Exception as exc:
         print(exc)
 #------------------------------------------------------------------------------
@@ -461,7 +476,7 @@ def draw_crosshair(dataset, args):
     if args == '':
         return
     try:
-        pixel_buffer = dataset.pixel_array
+        pixel_editor = PixelEditor(dataset.pixel_array)
         n_vals = 6
         pix_len = len(args)
         #if pix_len > 1:
@@ -474,11 +489,11 @@ def draw_crosshair(dataset, args):
             intensity = int(args[i + 4]) # intensity (for dash lines purpose)
             alpha = float(args[i + 5]) # alpha blending (for dash lines purpose)
 
-            if len(pixel_buffer) == 0:
+            if pixel_editor.buffer_length() == 0:
                 print("  Could not find a pixel array, value won't be set ...")
             else:
                 try:
-                    draw_xhair(pixel_buffer, pos_x, pos_y, crosshair_size, pen_width, intensity, alpha)
+                    pixel_editor.draw_xhair(pos_x, pos_y, crosshair_size, pen_width, intensity, alpha)
                 except Exception as exc:
                     print('  Error while trying to draw the crosshair, pixel values wont  be set ...')
                     print(exc)
@@ -486,7 +501,7 @@ def draw_crosshair(dataset, args):
             print("  Warning: list of 6 parameters sequences, but odd count was found instead, " + \
                 "found ending: <" + args[pix_len - 1] + '>')
 
-        dataset.PixelData = pixel_buffer.tostring()
+        dataset.PixelData = pixel_editor.buffer_to_string()
     except Exception as exc:
         print(exc)
 #------------------------------------------------------------------------------
@@ -496,7 +511,7 @@ def draw_roi(dataset, args):
     if args == '':
         return
     try:
-        pixel_buffer = dataset.pixel_array
+        pixel_editor = PixelEditor(dataset.pixel_array)
         n_vals = 4
         pix_len = len(args)
         #if pix_len > 1:
@@ -506,11 +521,11 @@ def draw_roi(dataset, args):
             pos_y = float(args[i + 1])
             stepping = float(args[i + 2])
             val = int(args[i + 3])
-            if len(pixel_buffer) == 0:
+            if pixel_editor.buffer_length() == 0:
                 print("  Could not find a pixel array, value won't be set ...")
             else:
                 try:
-                    draw_rect(pixel_buffer, pos_x, pos_y, stepping, stepping, 1, val)
+                    pixel_editor.draw_rect(pos_x, pos_y, stepping, stepping, 1, val)
                 except Exception as exc:
                     print('  Could not set that pixel value  <' + args[i + 2] + \
                             '>, value will not be set ...')
@@ -519,7 +534,7 @@ def draw_roi(dataset, args):
             print("  Warning: list of triplets expected, but odd count was found instead, " + \
                 "found ending: <" + args[pix_len - 1] + '>')
 
-        dataset.PixelData = pixel_buffer.tostring()
+        dataset.PixelData = pixel_editor.buffer_to_string()
     except Exception as exc:
         print(exc)
 #------------------------------------------------------------------------------
@@ -529,7 +544,7 @@ def draw_ellipse(dataset, args):
     if args == '':
         return
     try:
-        pixel_buffer = dataset.pixel_array
+        pixel_editor = PixelEditor(dataset.pixel_array)
         n_vals = 7
         pix_len = len(args)
         #if pix_len > 1:
@@ -543,11 +558,11 @@ def draw_ellipse(dataset, args):
             alpha = float(args[i + 5]) # pixel alpha transparency
             stepping = int(args[i + 6]) # stepping
 
-            if len(pixel_buffer) == 0:
+            if pixel_editor.buffer_length() == 0:
                 print("  Could not find a pixel array, value won't be set ...")
             else:
                 try:
-                    draw_elp(pixel_buffer, pos_x, pos_y, width, height, pixel_intensity, alpha, stepping)
+                    pixel_editor.draw_elp(pos_x, pos_y, width, height, pixel_intensity, alpha, stepping)
                 except Exception as exc:
                     print('  Error while trying to draw the rect, pixel values wont  be set ...')
                     print(exc)
@@ -555,7 +570,7 @@ def draw_ellipse(dataset, args):
             print("  Warning: list of triplets expected, but odd count was found instead, " + \
                 "found ending: <" + args[pix_len - 1] + '>')
 
-        dataset.PixelData = pixel_buffer.tostring()
+        dataset.PixelData = pixel_editor.buffer_to_string()
     except Exception as exc:
         print(exc)
 #------------------------------------------------------------------------------
@@ -565,7 +580,7 @@ def draw_rectangle(dataset, args):
     if args == '':
         return
     try:
-        pixel_buffer = dataset.pixel_array
+        pixel_editor = PixelEditor(dataset.pixel_array)
         n_vals = 7
         pix_len = len(args)
         #if pix_len > 1:
@@ -579,11 +594,11 @@ def draw_rectangle(dataset, args):
             pixel_intensity = int(args[i + 5]) # pixel intensity
             alpha = float(args[i + 6]) # pixel alpha transparency
 
-            if len(pixel_buffer) == 0:
+            if pixel_editor.buffer_length() == 0:
                 print("  Could not find a pixel array, value won't be set ...")
             else:
                 try:
-                    draw_rect(pixel_buffer, pos_x, pos_y, width, height, stepping, pixel_intensity, alpha)
+                    pixel_editor.draw_rect(pos_x, pos_y, width, height, stepping, pixel_intensity, alpha)
                 except Exception as exc:
                     print('  Error while trying to draw the rect, pixel values wont  be set ...')
                     print(exc)
@@ -591,7 +606,7 @@ def draw_rectangle(dataset, args):
             print("  Warning: list of triplets expected, but odd count was found instead, " + \
                 "found ending: <" + args[pix_len - 1] + '>')
 
-        dataset.PixelData = pixel_buffer.tostring()
+        dataset.PixelData = pixel_editor.buffer_to_string()
     except Exception as exc:
         print(exc)
 #------------------------------------------------------------------------------
@@ -601,7 +616,7 @@ def draw_frectangle(dataset, args):
     if args == '':
         return
     try:
-        pixel_buffer = dataset.pixel_array
+        pixel_editor = PixelEditor(dataset.pixel_array)
         n_vals = 6
         pix_len = len(args)
         #if pix_len > 1:
@@ -614,11 +629,11 @@ def draw_frectangle(dataset, args):
             pixel_intensity = int(args[i + 4]) # pixel intensity
             alpha = float(args[i + 5]) # pixel alpha transparency
 
-            if len(pixel_buffer) == 0:
+            if pixel_editor.buffer_length() == 0:
                 print("  Could not find a pixel array, value won't be set ...")
             else:
                 try:
-                    draw_frect(pixel_buffer, pos_x, pos_y, width, height, pixel_intensity, alpha)
+                    pixel_editor.draw_frect(pos_x, pos_y, width, height, pixel_intensity, alpha)
                 except Exception as exc:
                     print('  Error while trying to draw the rect, pixel values wont  be set ...')
                     print(exc)
@@ -626,7 +641,7 @@ def draw_frectangle(dataset, args):
             print("  Warning: list of triplets expected, but odd count was found instead, " + \
                 "found ending: <" + args[pix_len - 1] + '>')
 
-        dataset.PixelData = pixel_buffer.tostring()
+        dataset.PixelData = pixel_editor.buffer_to_string()
     except Exception as exc:
         print(exc)
 #------------------------------------------------------------------------------
@@ -765,12 +780,20 @@ def transform(file_count, args, desc_prefix, input_filename, output_filename):
         if args.desc != '':
             change_tag_if_arg(dataset, "SeriesDescription", args.desc) #optionally change study desc
         else: # automatic tracking of transformations
+            sdesc = dataset.dir('SeriesDescription');
+            
             try:
                 if desc_prefix != '':
-                    dataset.SeriesDescription = desc_prefix + ' ' + dataset.SeriesDescription
+                    if len(sdesc) != 0:
+                        desc = ' ' + dataset.SeriesDescription
+                    else:
+                        desc = ''
+                    dataset.SeriesDescription = desc_prefix + desc
+                    sdesc = dataset.dir('SeriesDescription'); #refresh in case we just created it
             except Exception as exc:
                 print(exc)
-        dataset.SeriesDescription = truncate_str(dataset.SeriesDescription, 63)
+        if len(sdesc) != 0:
+            dataset.SeriesDescription = truncate_str(dataset.SeriesDescription, 63)
 
         # write the 'transformed' DICOM out under the new filename
         dataset.save_as(output_filename)

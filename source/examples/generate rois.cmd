@@ -2,12 +2,11 @@
 REM
 REM dcm_transform Region of Interest's example of use below:
 REM
-set dcmTransform=..\..\dcm_transform.py
+set dcmTransform=..\dcm_transform.py
 set rootDir=%~dp0
 if exist %rootDir%result.dcm del %rootDir%result.dcm
 REM simple squared ROI
-python %dcmTransform% single.dcm result.dcm -roi 62 62 4 1023
-
+python %dcmTransform% .\data\brain2.dcm result.dcm -roi 62 62 4 1023
 
 REM draws 2 rectangles with the same command (6 parameters per rect)
 python %dcmTransform% result.dcm result.dcm -rect  82 32 30 20 3 1023 1.0 22 22 20 40 3 1023 1.0

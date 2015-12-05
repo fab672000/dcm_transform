@@ -24,6 +24,7 @@ class DcmTestCase(unittest.TestCase):
 
     dcm_data_root = 'examples\\data\\'
     image1 = 'brain1.dcm'
+    image2 = 'brain2.dcm'
     dataset = None
     input_ds_path = os.path.join(dcm_data_root, image1)
     output_ds_path = os.path.join(dcm_data_root, 'result.dcm')
@@ -40,11 +41,13 @@ class DcmTestCase(unittest.TestCase):
         self.dataset = dicom.read_file(self.input_ds_path)
         self.in_args = [self.input_ds_path, self.output_ds_path]
         self.test_args = dcm_transform.parse_arguments(self.in_args)
+        
+    def set_sample_images_io(self, in_filename, out_filename):
+        self.input_ds_path = os.path.join(self.dcm_data_root, in_filename)
+        self.output_ds_path = os.path.join(self.dcm_data_root, out_filename)
+        self.in_args = [self.input_ds_path, self.output_ds_path]
 
-class DcmTestTagChanges(DcmTestCase):
-    """ Test dcm_transform tag changing options"""
-
-    def instanciate_sut_transform(self, args, file_count=0, in_file=None, out_file=None):
+    def instanciate_sut_transform(self, args, file_count=0, out_file=None, in_file=None):
         """Call the sut transform funtion with predef'd parameters for testing purpose """
         if in_file == None:
             in_file = self.input_ds_path
@@ -53,6 +56,54 @@ class DcmTestTagChanges(DcmTestCase):
 
         self.file_count, dataset = dcm_transform.transform(file_count, args, '', in_file, out_file)
         return self.file_count, dataset
+
+    
+class DcmTestPixelEditor(DcmTestCase):
+    def test_draw_pixel(self):
+        self.set_sample_images_io(self.image2,'result_pixel.dcm')
+        self.in_args.extend(['-pixel', \
+            '35', '12', '1023', '1.0', \
+            '70', '92', '1023', '0.5'])
+        self.test_args = dcm_transform.parse_arguments(self.in_args)
+        file_count, dataset = self.instanciate_sut_transform(self.test_args)
+
+    def test_draw_roi(self):
+        self.set_sample_images_io(self.image2,'result_roi.dcm')
+        self.in_args.extend(['-roi','62','62','4','1023'])
+        self.test_args = dcm_transform.parse_arguments(self.in_args)
+        file_count, dataset = self.instanciate_sut_transform(self.test_args)
+
+    def test_draw_rect(self):
+        self.set_sample_images_io(self.image2,'result_rect.dcm')
+        self.in_args.extend(['-rect',\
+            '82', '32', '30', '20', '3', '1023', '1.0', \
+            '22', '22', '20', '40', '1  ', '1023', '1.0'])
+        self.test_args = dcm_transform.parse_arguments(self.in_args)
+        file_count, dataset = self.instanciate_sut_transform(self.test_args)
+
+    def test_draw_frect(self):
+        self.set_sample_images_io(self.image2,'result_frect.dcm')
+        self.in_args.extend(['-frect',\
+            '50', '10', '20', '40', '500', '0.5', \
+            '80', '80', '30', '30', '500', '.3'])
+        self.test_args = dcm_transform.parse_arguments(self.in_args)
+        file_count, dataset = self.instanciate_sut_transform(self.test_args)
+
+    def test_draw_elp(self):
+        self.set_sample_images_io(self.image2,'result_elp.dcm')
+        self.in_args.extend(['-elp','63.5', '63.5', '20' , '20', '1023', '1.0', '1'])
+        self.test_args = dcm_transform.parse_arguments(self.in_args)
+        file_count, dataset = self.instanciate_sut_transform(self.test_args)
+
+    def test_draw_crosshair(self):
+        self.set_sample_images_io(self.image2,'result_crosshair.dcm')
+        self.in_args.extend(['-crosshair', \
+            '30', '82', '5', '1', '1024', '1.0', '60', '92', '10', '2', '1024', '1.0'])
+        self.test_args = dcm_transform.parse_arguments(self.in_args)
+        file_count, dataset = self.instanciate_sut_transform(self.test_args)
+
+class DcmTestTagChanges(DcmTestCase):
+    """ Test dcm_transform tag changing options"""
 
     def test_anon1(self):
         """Test anonymization (with dpt) """
