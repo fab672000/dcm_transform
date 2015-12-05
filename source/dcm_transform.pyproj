@@ -38,13 +38,12 @@
     <Content Include="examples\data\brain1.dcm" />
     <Content Include="examples\data\brain2.dcm" />
     <Content Include="examples\data\license.txt" />
-    <Content Include="roi\generate rois.cmd" />
+    <Content Include="examples\generate rois.cmd" />
     <Content Include="generate variations.cmd" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="examples\" />
     <Folder Include="examples\data\" />
-    <Folder Include="roi\" />
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
