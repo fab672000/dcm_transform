@@ -63,13 +63,16 @@ class PixelEditor():
     pixel_buffer = None
 
     #------------------------------------------------------------------------------
-    def __init__(self, the_buf): 
+    def __init__(self, the_buf):
+        """Constructor from a pixel buffer"""
         self.pixel_buffer = the_buf
     #------------------------------------------------------------------------------
-    def buffer_length(self): 
+    def buffer_length(self):
+        """Get contained pixel buffer length."""
         return len(self.pixel_buffer)
     #------------------------------------------------------------------------------
-    def buffer_to_string(self): 
+    def buffer_to_string(self):
+        """Get contained pixel buffer as a string."""
         return self.pixel_buffer.tostring()
     #------------------------------------------------------------------------------
     def draw_pixel(self, pos_x, width, xstep, pos_y, height, ystep, val, alpha=1.0):
@@ -107,7 +110,7 @@ class PixelEditor():
     def draw_frect(self, pos_x, pos_y, width, height, val, alpha=1.0):
         """Draws a rect in the buffer at x, y to x+w, y+h with an [0, ] transparency factor """
         for i in range(int(pos_y), int(pos_y + height)):
-            self.draw_hline( pos_x, i, width, 1, val, alpha)
+            self.draw_hline(pos_x, i, width, 1, val, alpha)
     #------------------------------------------------------------------------------
     def draw_xhair(self, pos_x, pos_y, pen_size, width, val, alpha=1.0):
         """ Draws a cross hair  in the buffer at x, y with size s and pen width w
@@ -115,15 +118,19 @@ class PixelEditor():
         rounded_width = int(width / 2 * 2) + 1
         half_width = (rounded_width - 1) / 2
         line_len = int(pen_size)
-        self.draw_frect(pos_x - line_len, pos_y - half_width, line_len - half_width, rounded_width, val, alpha)
-        self.draw_frect(pos_x + half_width + 1, pos_y - half_width, line_len - half_width, rounded_width, val, alpha)
-        self.draw_frect(pos_x - half_width, pos_y - line_len, rounded_width, line_len - half_width, val, alpha)
-        self.draw_frect(pos_x - half_width, pos_y + 1 + half_width, rounded_width, line_len - half_width, val, alpha)
+        self.draw_frect(pos_x - line_len, pos_y - half_width, \
+            line_len - half_width, rounded_width, val, alpha)
+        self.draw_frect(pos_x + half_width + 1, pos_y - half_width, \
+            line_len - half_width, rounded_width, val, alpha)
+        self.draw_frect(pos_x - half_width, pos_y - line_len, \
+            rounded_width, line_len - half_width, val, alpha)
+        self.draw_frect(pos_x - half_width, pos_y + 1 + half_width, \
+            rounded_width, line_len - half_width, val, alpha)
 
 #------------------------------------------------------------------------------
 def parse_arguments(the_args=None):
     """Parse all command line arguments"""
-    version = '1.1.9'
+    version = '1.1.10'
 
     timestamp = str(int(time.time()))
     defaulf_series_uid = '1.2.3.4.' + timestamp + '.0.0.0'
@@ -276,12 +283,13 @@ def matrix_set_translation(matrix, translate_x, translate_y, translate_z):
 
 #------------------------------------------------------------------------------
 def set_str_vec(sarray, val, dim):
-    """#set string values for dataset array"""
+    """#Set string values for dataset array."""
     for i in range(0, dim):
         sarray[i] = str(val[i])
 
 #------------------------------------------------------------------------------
 def generate_soiud_from_seriesuid(defaulf_series_uid, instance_number):
+    """Fabricate a new sop instance uid."""
     return defaulf_series_uid + '.' + str(instance_number)
 
 #------------------------------------------------------------------------------
@@ -304,7 +312,8 @@ def compute_3d_transforms(dataset, args):
         return
 
     #Generate new UIDs automatically when any transform changes the geometry
-    generate_new_uids(dataset, args.suid, args.foruid, generate_soiud_from_seriesuid(defaulf_series_uid, dataset.InstanceNumber))
+    generate_new_uids(dataset, args.suid, args.foruid, \
+        generate_soiud_from_seriesuid(defaulf_series_uid, dataset.InstanceNumber))
 
     pos = [dataset.ImagePositionPatient[0].real, \
            dataset.ImagePositionPatient[1].real, dataset.ImagePositionPatient[2].real, 1.]
@@ -417,8 +426,9 @@ def assign_custom_tags(dataset, args):
             print("Setting tag " + args[i] + " to " + args[i + 1] + ' ... ')
             try:
                 data_element = dataset.data_element(args[i])
-            except KeyError as exc: #OK, maybe user wants a tag that is in file_meta metadata structure
-                                    #so give it a second chance:
+            except KeyError as exc:
+                # OK, maybe user wants a tag that is in file_meta metadata structure
+                # so give it a second chance:
                 data_element = dataset.file_meta.data_element(args[i])
 
             if data_element == None:
@@ -457,7 +467,7 @@ def set_image_pixels(dataset, args):
                 print("  Could not find a pixel array, value won't be set ...")
             else:
                 try:
-                    pixel_editor.draw_pixel( pos_x, 1, 1, pos_y, 1, 1, val, alpha)
+                    pixel_editor.draw_pixel(pos_x, 1, 1, pos_y, 1, 1, val, alpha)
                 except Exception as exc:
                     print('  Could not set that pixel value  <' + args[i + 2] + \
                             '>, value will not be set ...')
@@ -493,9 +503,11 @@ def draw_crosshair(dataset, args):
                 print("  Could not find a pixel array, value won't be set ...")
             else:
                 try:
-                    pixel_editor.draw_xhair(pos_x, pos_y, crosshair_size, pen_width, intensity, alpha)
+                    pixel_editor.draw_xhair(pos_x, pos_y, \
+                        crosshair_size, pen_width, intensity, alpha)
                 except Exception as exc:
-                    print('  Error while trying to draw the crosshair, pixel values wont  be set ...')
+                    print('  Error while trying to draw the crosshair, ' + \
+                        'pixel values wont  be set ...')
                     print(exc)
         if pix_len % n_vals != 0:
             print("  Warning: list of 6 parameters sequences, but odd count was found instead, " + \
@@ -562,7 +574,8 @@ def draw_ellipse(dataset, args):
                 print("  Could not find a pixel array, value won't be set ...")
             else:
                 try:
-                    pixel_editor.draw_elp(pos_x, pos_y, width, height, pixel_intensity, alpha, stepping)
+                    pixel_editor.draw_elp(pos_x, pos_y, width, height, \
+                        pixel_intensity, alpha, stepping)
                 except Exception as exc:
                     print('  Error while trying to draw the rect, pixel values wont  be set ...')
                     print(exc)
@@ -598,7 +611,8 @@ def draw_rectangle(dataset, args):
                 print("  Could not find a pixel array, value won't be set ...")
             else:
                 try:
-                    pixel_editor.draw_rect(pos_x, pos_y, width, height, stepping, pixel_intensity, alpha)
+                    pixel_editor.draw_rect(pos_x, pos_y, \
+                        width, height, stepping, pixel_intensity, alpha)
                 except Exception as exc:
                     print('  Error while trying to draw the rect, pixel values wont  be set ...')
                     print(exc)
@@ -780,8 +794,8 @@ def transform(file_count, args, desc_prefix, input_filename, output_filename):
         if args.desc != '':
             change_tag_if_arg(dataset, "SeriesDescription", args.desc) #optionally change study desc
         else: # automatic tracking of transformations
-            sdesc = dataset.dir('SeriesDescription');
-            
+            sdesc = dataset.dir('SeriesDescription')
+
             try:
                 if desc_prefix != '':
                     if len(sdesc) != 0:
@@ -789,7 +803,7 @@ def transform(file_count, args, desc_prefix, input_filename, output_filename):
                     else:
                         desc = ''
                     dataset.SeriesDescription = desc_prefix + desc
-                    sdesc = dataset.dir('SeriesDescription'); #refresh in case we just created it
+                    sdesc = dataset.dir('SeriesDescription') #refresh in case we just created it
             except Exception as exc:
                 print(exc)
         if len(sdesc) != 0:
@@ -836,9 +850,12 @@ def iterate_once(in_args, input_dir, output_dir):
         for filename in fnames:
             if not os.path.isdir(os.path.join(input_dir, filename)):
                 print('Transforming ' + series_desc_prefix + filename + " ...", end='')
-                series_file_count, dataset = transform(series_file_count, ARGS, series_desc_prefix, \
-                                       os.path.join(input_dir, filename), \
-                                       os.path.join(output_dir, filename))
+                series_file_count, dataset = transform(series_file_count, \
+                        ARGS, series_desc_prefix, \
+                        os.path.join(input_dir, filename), \
+                        os.path.join(output_dir, filename))
+                if dataset == None:
+                    print("Null dataset was return after transformation !")
                 print(" done\r")
     else:  # first arg not a directory, assume two files given
         in_filename = in_args.input_series

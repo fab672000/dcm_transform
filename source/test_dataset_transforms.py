@@ -41,8 +41,9 @@ class DcmTestCase(unittest.TestCase):
         self.dataset = dicom.read_file(self.input_ds_path)
         self.in_args = [self.input_ds_path, self.output_ds_path]
         self.test_args = dcm_transform.parse_arguments(self.in_args)
-        
+
     def set_sample_images_io(self, in_filename, out_filename):
+        """Define input and output image filename and generate full paths for testing purpose."""
         self.input_ds_path = os.path.join(self.dcm_data_root, in_filename)
         self.output_ds_path = os.path.join(self.dcm_data_root, out_filename)
         self.in_args = [self.input_ds_path, self.output_ds_path]
@@ -57,50 +58,68 @@ class DcmTestCase(unittest.TestCase):
         self.file_count, dataset = dcm_transform.transform(file_count, args, '', in_file, out_file)
         return self.file_count, dataset
 
-    
 class DcmTestPixelEditor(DcmTestCase):
+    """Utility class for drawing basic geometries inside a pixel buffer"""
     def test_draw_pixel(self):
-        self.set_sample_images_io(self.image2,'result_pixel.dcm')
+        """Test pixel drawing"""
+        self.set_sample_images_io(self.image2, 'result_pixel.dcm')
         self.in_args.extend(['-pixel', \
             '35', '12', '1023', '1.0', \
             '70', '92', '1023', '0.5'])
         self.test_args = dcm_transform.parse_arguments(self.in_args)
         file_count, dataset = self.instanciate_sut_transform(self.test_args)
+        self.assertEqual(file_count, 1)
+        self.assertIsNotNone(dataset.pixel_array)
 
     def test_draw_roi(self):
-        self.set_sample_images_io(self.image2,'result_roi.dcm')
-        self.in_args.extend(['-roi','62','62','4','1023'])
+        """Test ROI drawing"""
+        self.set_sample_images_io(self.image2, 'result_roi.dcm')
+        self.in_args.extend(['-roi', '62', '62', '4', '1023'])
         self.test_args = dcm_transform.parse_arguments(self.in_args)
         file_count, dataset = self.instanciate_sut_transform(self.test_args)
+        self.assertEqual(file_count, 1)
+        self.assertIsNotNone(dataset.pixel_array)
 
     def test_draw_rect(self):
-        self.set_sample_images_io(self.image2,'result_rect.dcm')
+        """Test rectangle drawing"""
+        self.set_sample_images_io(self.image2, 'result_rect.dcm')
         self.in_args.extend(['-rect',\
             '82', '32', '30', '20', '3', '1023', '1.0', \
             '22', '22', '20', '40', '1  ', '1023', '1.0'])
         self.test_args = dcm_transform.parse_arguments(self.in_args)
         file_count, dataset = self.instanciate_sut_transform(self.test_args)
+        self.assertEqual(file_count, 1)
+        self.assertIsNotNone(dataset.pixel_array)
 
     def test_draw_frect(self):
-        self.set_sample_images_io(self.image2,'result_frect.dcm')
+        """Test filled rectangle drawing"""
+        self.set_sample_images_io(self.image2, 'result_frect.dcm')
         self.in_args.extend(['-frect',\
             '50', '10', '20', '40', '500', '0.5', \
             '80', '80', '30', '30', '500', '.3'])
         self.test_args = dcm_transform.parse_arguments(self.in_args)
         file_count, dataset = self.instanciate_sut_transform(self.test_args)
+        self.assertEqual(file_count, 1)
+        self.assertIsNotNone(dataset.pixel_array)
 
     def test_draw_elp(self):
-        self.set_sample_images_io(self.image2,'result_elp.dcm')
-        self.in_args.extend(['-elp','63.5', '63.5', '20' , '20', '1023', '1.0', '1'])
+        """Test ellipse/circle drawing"""
+        self.set_sample_images_io(self.image2, 'result_elp.dcm')
+        self.in_args.extend(['-elp', '63.5', '63.5', '20', '20', '1023', '1.0', '1'])
         self.test_args = dcm_transform.parse_arguments(self.in_args)
         file_count, dataset = self.instanciate_sut_transform(self.test_args)
+        self.assertEqual(file_count, 1)
+        self.assertIsNotNone(dataset.pixel_array)
 
     def test_draw_crosshair(self):
-        self.set_sample_images_io(self.image2,'result_crosshair.dcm')
+        """Test crosshairdrawing"""
+        self.set_sample_images_io(self.image2, 'result_crosshair.dcm')
         self.in_args.extend(['-crosshair', \
             '30', '82', '5', '1', '1024', '1.0', '60', '92', '10', '2', '1024', '1.0'])
         self.test_args = dcm_transform.parse_arguments(self.in_args)
         file_count, dataset = self.instanciate_sut_transform(self.test_args)
+        self.assertEqual(file_count, 1)
+        self.assertIsNotNone(dataset.pixel_array)
 
 class DcmTestTagChanges(DcmTestCase):
     """ Test dcm_transform tag changing options"""
