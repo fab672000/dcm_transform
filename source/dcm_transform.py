@@ -130,7 +130,7 @@ class PixelEditor():
 #------------------------------------------------------------------------------
 def parse_arguments(the_args=None):
     """Parse all command line arguments"""
-    version = '1.1.10'
+    version = '1.1.11'
 
     timestamp = str(int(time.time()))
     defaulf_series_uid = '1.2.3.4.' + timestamp + '.0.0.0'
@@ -687,9 +687,8 @@ def transform_dates(file_count, dataset, args):
             dataset.AcquisitionTime = get_dicom_time_from(current_time)
     except Exception as exc:
         print(exc)
-
-#------------------------------------------------------------------------------
-def anonymize_tags_if_anon(dataset, args, remove_curves=False, remove_private_tags=False):
+#------------------------------------------------------------------------------------------------------
+def check_if_anonymize_or_cleanup_needed(dataset, args, remove_curves=False, remove_private_tags=False):
     """ Anonymize dataset tags"""
     # Series Description gets automatically populated with useful transform
     # info by default:
@@ -698,7 +697,6 @@ def anonymize_tags_if_anon(dataset, args, remove_curves=False, remove_private_ta
     if args.an != '':
         dataset.walk(pn_callback)
 
-    if args.an != '':
         if args.pid != '':
             dataset.PatientID = args.pid
         else:
@@ -731,13 +729,14 @@ def anonymize_tags_if_anon(dataset, args, remove_curves=False, remove_private_ta
         for name in ['SeriesTime', 'StudyTime']:
             if name in dataset:
                 dataset.data_element(name).value = '000000.000000'
-
-        ## Remove private tags if function argument says to do so.  Same
-        ## for curves
-        if remove_private_tags:
-            dataset.remove_private_tags()
-        if remove_curves:
-            dataset.walk(curves_callback)
+    
+    #applicable with or without anon:
+    ## Remove private tags if function argument says to do so.  Same
+    ## for curves
+    if remove_private_tags:
+        dataset.remove_private_tags()
+    if remove_curves:
+        dataset.walk(curves_callback)
 
 #------------------------------------------------------------------------------
 def truncate_str(input_str, maxlen, ending='..'):
@@ -771,7 +770,7 @@ def transform(file_count, args, desc_prefix, input_filename, output_filename):
             dataset.SeriesNumber = args.sn
 
         # Anonymize dataset tags
-        anonymize_tags_if_anon(dataset, args, False, args.delete_private_tags)
+        check_if_anonymize_or_cleanup_needed(dataset, args, False, args.delete_private_tags)
 
         # Deal with all sorts of dates and time if user asks for it:
         transform_dates(file_count, dataset, args)

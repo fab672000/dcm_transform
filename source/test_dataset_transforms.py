@@ -132,7 +132,7 @@ class DcmTestTagChanges(DcmTestCase):
 
         # needed because dataset.walk(PN_Callback) does not give an optional data param:
         dcm_transform.ARGS = self.test_args
-        dcm_transform.anonymize_tags_if_anon(self.dataset, self.test_args, True, True)
+        dcm_transform.check_if_anonymize_or_cleanup_needed(self.dataset, self.test_args, True, True)
 
     def test_patient_tags(self):
         """Test common patient tags settings"""
