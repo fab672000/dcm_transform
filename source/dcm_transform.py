@@ -17,7 +17,7 @@
         and replicate a complete dicom tree directory
           structure with the required modifications applied to it.
 
-	- Requires Python 2.7
+	- Requires Python 2.7.x, 3.6.x or better
 	- Requires Packages: pydicom (as well as scipy, numpy if you don't use anaconda)
 
     Created by:  fab672000
