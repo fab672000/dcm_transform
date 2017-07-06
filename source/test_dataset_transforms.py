@@ -9,15 +9,13 @@ import unittest
 import dcm_transform
 
 import os, os.path, time
-#, sys, math, argparse
-#from datetime import datetime, timedelta
-#import numpy as np
-#from scipy import linalg
 
 try:
     import dicom
 except ImportError:
+    # noinspection PyUnresolvedReferences
     import pydicom as dicom
+
 
 class DcmTestCase(unittest.TestCase):
     """Base class for testing dcm operations, loads a dicom test dataset by default"""
@@ -50,22 +48,24 @@ class DcmTestCase(unittest.TestCase):
 
     def instanciate_sut_transform(self, args, file_count=0, out_file=None, in_file=None):
         """Call the sut transform funtion with predef'd parameters for testing purpose """
-        if in_file == None:
+        if in_file is None:
             in_file = self.input_ds_path
-        if out_file == None:
+        if out_file is None:
             out_file = self.output_ds_path
 
         self.file_count, dataset = dcm_transform.transform(file_count, args, '', in_file, out_file)
         return self.file_count, dataset
 
+
 class DcmTestPixelEditor(DcmTestCase):
     """Utility class for drawing basic geometries inside a pixel buffer"""
+
     def test_draw_pixel(self):
         """Test pixel drawing"""
         self.set_sample_images_io(self.image2, 'result_pixel.dcm')
-        self.in_args.extend(['-pixel', \
-            '35', '12', '1023', '1.0', \
-            '70', '92', '1023', '0.5'])
+        self.in_args.extend(['-pixel',
+                             '35', '12', '1023', '1.0',
+                             '70', '92', '1023', '0.5'])
         self.test_args = dcm_transform.parse_arguments(self.in_args)
         file_count, dataset = self.instanciate_sut_transform(self.test_args)
         self.assertEqual(file_count, 1)
@@ -83,9 +83,9 @@ class DcmTestPixelEditor(DcmTestCase):
     def test_draw_rect(self):
         """Test rectangle drawing"""
         self.set_sample_images_io(self.image2, 'result_rect.dcm')
-        self.in_args.extend(['-rect',\
-            '82', '32', '30', '20', '3', '1023', '1.0', \
-            '22', '22', '20', '40', '1  ', '1023', '1.0'])
+        self.in_args.extend(['-rect',
+                             '82', '32', '30', '20', '3', '1023', '1.0',
+                             '22', '22', '20', '40', '1  ', '1023', '1.0'])
         self.test_args = dcm_transform.parse_arguments(self.in_args)
         file_count, dataset = self.instanciate_sut_transform(self.test_args)
         self.assertEqual(file_count, 1)
@@ -94,9 +94,9 @@ class DcmTestPixelEditor(DcmTestCase):
     def test_draw_frect(self):
         """Test filled rectangle drawing"""
         self.set_sample_images_io(self.image2, 'result_frect.dcm')
-        self.in_args.extend(['-frect',\
-            '50', '10', '20', '40', '500', '0.5', \
-            '80', '80', '30', '30', '500', '.3'])
+        self.in_args.extend(['-frect',
+                             '50', '10', '20', '40', '500', '0.5',
+                             '80', '80', '30', '30', '500', '.3'])
         self.test_args = dcm_transform.parse_arguments(self.in_args)
         file_count, dataset = self.instanciate_sut_transform(self.test_args)
         self.assertEqual(file_count, 1)
@@ -114,12 +114,13 @@ class DcmTestPixelEditor(DcmTestCase):
     def test_draw_crosshair(self):
         """Test crosshairdrawing"""
         self.set_sample_images_io(self.image2, 'result_crosshair.dcm')
-        self.in_args.extend(['-crosshair', \
-            '30', '82', '5', '1', '1024', '1.0', '60', '92', '10', '2', '1024', '1.0'])
+        self.in_args.extend(['-crosshair',
+                             '30', '82', '5', '1', '1024', '1.0', '60', '92', '10', '2', '1024', '1.0'])
         self.test_args = dcm_transform.parse_arguments(self.in_args)
         file_count, dataset = self.instanciate_sut_transform(self.test_args)
         self.assertEqual(file_count, 1)
         self.assertIsNotNone(dataset.pixel_array)
+
 
 class DcmTestTagChanges(DcmTestCase):
     """ Test dcm_transform tag changing options"""
@@ -152,12 +153,12 @@ class DcmTestTagChanges(DcmTestCase):
         self.assertNotEqual(self.sopiuid, self.dataset.SOPInstanceUID)
         self.assertNotEqual(self.frame_of_ref_uid, self.dataset.FrameOfReferenceUID)
 
-        dcm_transform.generate_new_uids(self.dataset, self.series_uid, \
-            self.frame_of_ref_uid, self.sopiuid)
+        dcm_transform.generate_new_uids(self.dataset, self.series_uid, self.frame_of_ref_uid, self.sopiuid)
 
         self.assertEqual(self.series_uid, self.dataset.SeriesInstanceUID)
         self.assertEqual(self.sopiuid, self.dataset.SOPInstanceUID)
         self.assertEqual(self.frame_of_ref_uid, self.dataset.FrameOfReferenceUID)
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

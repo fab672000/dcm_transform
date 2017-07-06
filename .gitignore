@@ -3,3 +3,5 @@ source/original/
 *.pyc
 source/examples/data/result.dcm
 source/examples/data/result*.dcm
+.idea/
+dcm_transform.v12.suo

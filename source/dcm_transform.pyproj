@@ -17,7 +17,7 @@
     <CommandLineArguments>
     </CommandLineArguments>
     <EnableNativeCodeDebugging>False</EnableNativeCodeDebugging>
-    <PublishUrl>D:\DevTools\Python27\Scripts</PublishUrl>
+    <PublishUrl>D:\DevTools\Python3\Scripts</PublishUrl>
     <DebugStdLib>False</DebugStdLib>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
